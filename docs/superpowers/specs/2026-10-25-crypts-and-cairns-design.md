@@ -72,7 +72,7 @@ The MVP contains one dense, explorable district. Its location, scheduling, navig
 
 ## 5. Playable peoples and classes
 
-All six peoples and fourteen people-and-class combinations are available in the Floor 1 MVP. Class names remain familiar and descriptive, while each people allows only a lore-appropriate subset.
+All six peoples and fifteen people-and-class combinations are available in the Floor 1 MVP. Class names remain familiar and descriptive, while each people allows only a lore-appropriate subset.
 
 | People | Inherited or cultural system | Available classes |
 |---|---|---|
@@ -81,7 +81,7 @@ All six peoples and fourteen people-and-class combinations are available in the 
 | Dwarves | Relic affinity reduces artifact cooldowns and failure risks | Fighter, Knight |
 | Elves | Elemental spirit contracts and exceptional hearing | Hunter, Mage |
 | Beastkin | Contract, summon, empower, or merge with an ancestral beast | Hunter, Rogue |
-| Titanborn | Descendants of ancient titans with exceptional load-bearing strength, resistance to displacement, and affinity for titan-forged arms | Knight, Paladin |
+| Titanborn | Descendants of ancient titans with exceptional load-bearing strength, resistance to displacement, affinity for titan-forged arms, and inherited titan magic | Knight, Paladin, Mage |
 
 Tribal People are human, but their clan upbringing and inherited rites make them a distinct playable people. The Humans option represents Caerfaldon's ordinary urban humans in the MVP. Commoner and noble are future Human backgrounds, not separate species or classes.
 
@@ -445,7 +445,7 @@ Completion claims require fresh headless tests, a desktop-editor playthrough, an
 
 ## 23. Floor 1 MVP content target
 
-- Six peoples and fourteen people-and-class combinations.
+- Six peoples and fifteen people-and-class combinations.
 - Character creation and cultural name generation.
 - One expandable Caerfaldon district with nine services.
 - Hero plus up to four autonomous companions.
