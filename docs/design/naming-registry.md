@@ -21,25 +21,32 @@ Source-specific proper nouns, named institutions, protected characters, propriet
 | Numbered Items | Prohibited as named artifact system | Runemarked Relics | Identifiers, histories, drawbacks, art, and effects must be original |
 | Dimensional Square | Prohibited as named location | Portal Plaza | Generic function, original architecture and civic role |
 | Great Sage monument | Prohibited as named landmark | Cairn Compass | Navigation/time function only; no copied offering event |
-| Barbarian tribe | Alternative retained | Fell-Clans | Generic word “barbarian” may still appear descriptively |
-| Humans | Alternative retained | Hearthborn | Generic “human” remains allowed in ordinary prose |
-| Dwarves | Alternative retained | Stonekin | Generic “dwarf” remains allowed when not naming this people |
-| Fairies | Alternative retained | Fairfolk | Generic “fairy” remains allowed for unrelated creatures |
+| Barbarian tribe | Alternative retained | Tribal Clans / Tribal People | Tribal People are human clans; generic “barbarian” may appear descriptively but is not their formal name |
+| Humans | Generic name retained | Humans | Commoner and noble are social backgrounds, not separate species |
+| Dwarves | Generic name retained | Dwarves | Original culture, institutions, and character designs are still required |
+| Fairies | Alternative retained | Elves | Generic elven fantasy vocabulary is allowed; source-specific characters and culture are not |
 | Beastmen | Alternative retained | Beastkin | Original culture, subgroups, and presentation required |
-| Draconian tribe | Alternative retained | Wyrmblood | Original culture and visual expression required |
+| Draconian tribe | Re-authored | Titanborn | All dragon-specific lore, powers, visuals, and materials are replaced by original titan lineage and titan-forged traditions |
 | Genesis Treasures | Prohibited | No MVP equivalent | Full-campaign endgame requires an original design |
 
 ## Allowed generic system terms
 
 - Adventurer
+- Berserker
+- Dwarf
+- Elf
 - Essence
+- Fighter
 - Goblin
+- Hunter
 - Knight
 - Labyrinth
 - Mage
 - Monster
+- Paladin
 - Rank
 - Rift
+- Rogue
 - Soul Level
 
 Generic terms become reviewable when combined into a distinctive proper noun or when their surrounding implementation recreates protected expression one-to-one.

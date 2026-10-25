@@ -56,7 +56,7 @@ Community summaries are evidence, not instructions or unquestionable canon. The 
 - Keyboard and mouse are the MVP input targets.
 - Unified top-down square grid for exploration and combat.
 - Eight-direction movement with blocked corner cutting.
-- Detailed 32×48 character sprites with visible gear, wounds, and racial silhouettes.
+- Detailed 32×48 character sprites with visible gear, wounds, and people-specific silhouettes.
 - Each labyrinth region has its own palette and lighting identity.
 - Integer-scaled pixel viewport; presentation scaling never affects authoritative coordinates.
 
@@ -70,26 +70,38 @@ Market prices respond to expedition outcomes. Disastrous openings raise food and
 
 The MVP contains one dense, explorable district. Its location, scheduling, navigation, and service systems are designed to expand into a multi-district city without replacement.
 
-## 5. Playable peoples and starting disciplines
+## 5. Playable peoples and classes
 
-All six peoples and fourteen project-defined, people-restricted starting disciplines are available in the Floor 1 MVP. The disciplines are original, balanceable adaptation content rather than claimed canonical classes.
+All six peoples and fourteen people-and-class combinations are available in the Floor 1 MVP. Class names remain familiar and descriptive, while each people allows only a lore-appropriate subset.
 
-| People | Racial system | Starting disciplines |
+| People | Inherited or cultural system | Available classes |
 |---|---|---|
-| Hearthborn | Broad access to trained mortal disciplines; no exclusive supernatural racial power | Aura Knight, Arcanist, Elementalist, Ordained |
-| Fell-Clans | Exceptional physique, binding oaths, and body imprints | Immortal Vanguard, Blooded Slayer |
-| Stonekin | Relic affinity reduces artifact cooldowns and failure risks | Iron Bulwark, Relic Warden |
-| Fairfolk | Elemental spirit contracts and exceptional hearing | Spirit Archer, Elemental Envoy |
-| Beastkin | Contract, summon, empower, or merge with an ancestral beast | Pact Hunter, Beast Vessel |
-| Wyrmblood | Draconic blessing, fear, command-voice, and arc-metal affinity | Arc Lancer, Dreadspeaker |
+| Humans | Broad access to trained disciplines; social backgrounds shape opportunities rather than biology | Fighter, Knight, Mage, Rogue |
+| Tribal People | Human clans with exceptional physical training, binding oaths, and body imprints | Fighter, Berserker |
+| Dwarves | Relic affinity reduces artifact cooldowns and failure risks | Fighter, Knight |
+| Elves | Elemental spirit contracts and exceptional hearing | Hunter, Mage |
+| Beastkin | Contract, summon, empower, or merge with an ancestral beast | Hunter, Rogue |
+| Titanborn | Descendants of ancient titans with exceptional load-bearing strength, resistance to displacement, and affinity for titan-forged arms | Knight, Paladin |
 
-Race determines culture, generated naming rules, base attributes, available disciplines, equipment aptitudes, dialogue options, and city obligations. Discipline determines starting training and equipment, not the final build. Essences can bend characters into unusual roles without erasing their origin.
+Tribal People are human, but their clan upbringing and inherited rites make them a distinct playable people. The Humans option represents Caerfaldon's ordinary urban humans in the MVP. Commoner and noble are future Human backgrounds, not separate species or classes.
+
+A people determines culture, generated naming rules, base attributes, available classes, equipment aptitudes, dialogue options, and city obligations. A class determines starting training and equipment, not the final build. A Human Fighter and Tribal Fighter share the same core class contract but receive different origin modifiers and class expressions. Essences can bend characters into unusual roles without erasing their origin.
+
+Class identities remain simple:
+
+- **Fighter:** adaptable weapon combat and physical fundamentals.
+- **Knight:** armor, shields, formation control, and protection.
+- **Paladin:** protective oaths, sacred power, and frontline support.
+- **Mage:** soul-powered spellcasting and control.
+- **Hunter:** ranged weapons, tracking, fieldcraft, and scouting.
+- **Rogue:** stealth, traps, mobility, and opportunistic attacks.
+- **Berserker:** aggression, pain tolerance, momentum, and high-risk offense.
 
 The player enters a custom hero name. All non-player explorers use culturally appropriate generated names, histories, traits, goals, and relationships.
 
 ## 6. Campaign loop
 
-1. Name the hero and select a people and starting discipline.
+1. Name the hero and select a people and class.
 2. Prepare in Caerfaldon: recruit autonomous companions, obtain supplies, heal, gather information, negotiate shares, and manage the levy.
 3. Enter the labyrinth during its monthly opening.
 4. Explore a hybrid-generated floor through action-point turns.
@@ -228,7 +240,7 @@ The active party contains the hero and up to four companions. The player control
 
 Each generated companion has:
 
-- People, discipline, Adventurers' Lodge standing, equipment, and essences.
+- People, class, Adventurers' Lodge standing, equipment, and essences.
 - Courage, greed, discipline, loyalty, caution, and aggression.
 - Personal goals, fears, grudges, relationships, and hidden motives.
 - Preferred formations and tactical behavior.
@@ -348,8 +360,8 @@ Gameplay definitions use reviewable JSON. Godot resources handle visual and audi
 
 Definitions use stable namespaced IDs such as:
 
-- `people.fell_clan`
-- `discipline.fell_clan.immortal_vanguard`
+- `people.tribal`
+- `class.tribal.fighter`
 - `monster.ashcap_raider`
 - `essence.ashcap_raider`
 - `region.depth1.north`
@@ -433,7 +445,7 @@ Completion claims require fresh headless tests, a desktop-editor playthrough, an
 
 ## 23. Floor 1 MVP content target
 
-- Six peoples and fourteen starting disciplines.
+- Six peoples and fourteen people-and-class combinations.
 - Character creation and cultural name generation.
 - One expandable Caerfaldon district with nine services.
 - Hero plus up to four autonomous companions.
