@@ -1,7 +1,9 @@
 # Crypts & Cairns — Floor 1 MVP Design
 
-**Date:** 2026-10-25  
-**Status:** Approved design baseline  
+**Date:** 2026-10-25
+
+**Status:** Approved design baseline, revision 2
+
 **Target:** Godot 4, desktop browsers, single-player, turn-based pixel-art roguelike
 
 ## 1. Product statement
@@ -10,15 +12,17 @@
 
 *Crypts & Cairns* recreates the experience of the fictional game underlying *Surviving the Game as a Barbarian*, interpreted through the manhwa's lived-world consequences: bodily injury, survival needs, autonomous companions, taxation, institutions, social risk, and permanent death.
 
-The player is a native explorer, not a transported version of a protected character. The game uses original characters, lore, dialogue, artwork, creatures, artifacts, locations, and plot events.
+The player is a native explorer, not a transported version of a protected character. The game deliberately retains recognizable structural mechanics while using original characters, specific histories, dialogue, artwork, creature expression, artifacts, locations, and plot events.
 
 ## 2. Source posture and originality controls
 
-The project deliberately occupies a source-inspired grey area and does not claim guaranteed legal safety. It preserves high-level systemic inspiration while preventing accidental reuse of protected expression.
+The project deliberately occupies a source-inspired grey area and does not claim guaranteed legal safety. It prioritizes fidelity to the fictional game's systems while preventing accidental reuse of protected expression.
 
 ### 2.1 Naming policy
 
-Every shipped world element must use an original alternative name. A non-exported naming registry will record:
+Generic fantasy vocabulary may remain unchanged when it is descriptive rather than source-identifying. Allowed examples include goblin, knight, mage, adventurer, labyrinth, essence, rift, soul level, rank, and monster. Source-specific proper nouns, named institutions, characters, proprietary creatures, artifacts, and events require original alternatives.
+
+A non-exported naming registry will record:
 
 - The reference concept and source confidence.
 - Prohibited source terminology.
@@ -28,7 +32,7 @@ Every shipped world element must use an original alternative name. A non-exporte
 
 Automated release checks scan gameplay content, resource IDs, filenames, UI strings, localization files, and the final export manifest for prohibited terminology. Manual review covers renamed equivalents that string scanning cannot detect.
 
-Protected character names, dialogue, artwork, plot sequences, proprietary creature designs, and direct artifact or floor-event mappings are prohibited. Marketplace and trademark searches are required before public release.
+Protected character names, dialogue, artwork, plot sequences, proprietary creature designs, and one-to-one textual or visual reproduction of artifacts and floor events are prohibited. Deliberate structural fidelity—such as Floor 1 retaining four cardinal routes and a central navigation landmark—is permitted when its names, inhabitants, event logic, art, and authored challenges are original. Marketplace and trademark searches are required before public release.
 
 The naming registry, source references, tests, and design/legal documentation must not be included in the Web export.
 
@@ -41,7 +45,7 @@ Each adapted mechanic is classified as one of:
 - **Inference:** a design interpretation from incomplete evidence.
 - **Original adaptation:** created for this game.
 
-Community summaries are evidence, not instructions or unquestionable canon.
+Community summaries are evidence, not instructions or unquestionable canon. The working ledgers are maintained in `docs/design/naming-registry.md` and `docs/design/source-provenance.md`.
 
 ## 3. Platform and presentation
 
@@ -68,7 +72,7 @@ The MVP contains one dense, explorable district. Its location, scheduling, navig
 
 ## 5. Playable peoples and starting disciplines
 
-All six peoples and fourteen lore-locked starting disciplines are available in the Floor 1 MVP. The disciplines are original, balanceable adaptation content rather than claimed canonical classes.
+All six peoples and fourteen project-defined, people-restricted starting disciplines are available in the Floor 1 MVP. The disciplines are original, balanceable adaptation content rather than claimed canonical classes.
 
 | People | Racial system | Starting disciplines |
 |---|---|---|
@@ -110,6 +114,16 @@ Experience is awarded only for a hero's first defeat of a creature species. Vari
 
 Each Soul Level raises maximum soul power, opens one essence slot, and slightly improves resistance to soul effects. Increasing requirements force the player to seek diverse creatures and achievements rather than farm one safe encounter.
 
+Selected record feats provide a separate repeatable growth route. A feat only awards experience when the hero establishes a qualifying new record or satisfies a cycle-specific challenge; repeating an unchanged safe action produces nothing.
+
+### 7.1 Distinct rank systems
+
+- **Soul Level:** personal progression earned from first-species defeats and qualifying feats; controls soul power and essence capacity.
+- **Adventurer standing:** an appraisal issued by the Adventurers' Lodge from engraved essence power, demonstrated capability, and audited achievements; it controls contracts, party access, and institutional trust.
+- **Creature rank:** the Rank 9-to-Rank 1 danger scale used for monsters and encounter planning.
+
+These values may correlate but never substitute for one another.
+
 ## 8. Essences
 
 Creatures have a small chance to leave an essence. An essence dissolves after 30 in-world minutes, forcing an immediate decision.
@@ -137,20 +151,20 @@ Creature categories are:
 - **Rare species:** conditional or rift-exclusive creatures.
 - **Named superior variants:** intelligent individuals with distinct histories, essence powers, behaviors, and rewards.
 
-Creature bodies dissolve after death and leave applicable drops. Blood, environmental damage, and selected physical traces may remain when mechanically relevant. Group size and encounter pressure increase as an expedition approaches floor closure.
+Ranked creature bodies dissolve after death and leave applicable drops. Unranked bodies persist and may provide physical evidence, food, or materials. Blood, environmental damage, and selected physical traces may remain when mechanically relevant. Group size and encounter pressure increase as an expedition approaches floor closure.
 
 ## 10. Floor 1
 
 Floor 1 lasts exactly 168 in-world hours. Closure expels surviving explorers who remain on the floor.
 
-The floor is a luminous cave network with a central monument and four cardinal ecosystems:
+The floor is a luminous cave network with a central navigation landmark called the **Cairn Compass** and four cardinal ecosystems:
 
 - **North — Ashcap Warrens:** fungal scavengers, alarms, ambushes, and mechanical traps.
 - **East — Razorhound Galleries:** pack predators, scent tracking, pursuit, and open caverns.
 - **South — Barrow Deeps:** pallid undead, disease, darkness, and spiritual hazards.
 - **West — Delver Hollows:** burrowers, rockfalls, defensive formations, and clay sentinels.
 
-The four routes converge toward distinct Floor 2 doors. The central monument provides stable navigational knowledge and conditional interactions without revealing the entire generated layout.
+The four routes converge toward distinct Floor 2 doors. The Cairn Compass reveals orientation, elapsed floor time, and which route doors have been activated without exposing the generated layout.
 
 ### 10.1 Hybrid generation
 
@@ -178,7 +192,7 @@ The MVP includes four original rifts:
 - Ossuary of Bells.
 - Sunken Foundry.
 
-Only some are available in a cycle. Aetherstone offerings at monuments can reveal whether a rift is dormant, available, or awaiting another condition without exposing the complete solution.
+Only some are available in a cycle. Region-specific signs, rumors, creature behavior, and authored environmental conditions reveal whether a rift is dormant, available, or awaiting another condition. The Cairn Compass does not expose or activate rifts.
 
 ## 11. Equipment and Runemarked Relics
 
@@ -190,7 +204,7 @@ Example original effects include an immovable shield that roots its bearer, a to
 
 ## 12. Combat contract
 
-Exploration and combat share one grid and ruleset. Hostile awareness exposes full tactical AP controls without transitioning to a separate battle scene.
+Exploration and combat share one grid and ruleset. Hostile awareness exposes full tactical AP controls without transitioning to a separate battle scene. A threat-and-attention model determines target selection from damage, proximity, noise, obstruction, healing, provocation, and protective abilities.
 
 - Initiative is speed-sorted each round.
 - Actors receive 12 baseline AP, modified by conditions.
@@ -214,7 +228,7 @@ The active party contains the hero and up to four companions. The player control
 
 Each generated companion has:
 
-- People, discipline, explorer rank, equipment, and essences.
+- People, discipline, Adventurers' Lodge standing, equipment, and essences.
 - Courage, greed, discipline, loyalty, caution, and aggression.
 - Personal goals, fears, grudges, relationships, and hidden motives.
 - Preferred formations and tactical behavior.
@@ -226,11 +240,17 @@ AI decisions use only what the companion can perceive and what party members hav
 
 Companions can refuse suicidal commands, panic, save allies, steal, desert, or betray the party. Companion death is permanent.
 
+### 13.1 Wider expedition society
+
+The labyrinth is populated by other autonomous parties rather than existing only for the player's group. The MVP includes neutral teams, rivals, opportunistic raiders, active camps, contested claims, information exchange, requests for aid, and encounters whose outcomes affect later Lodge reports and city relationships.
+
+Expeditions support explicit navigation and camp roles. Parties choose routes, camp sites, sleep schedules, watches, light discipline, and retreat posture. Guides and characters with sensory expertise reduce navigation uncertainty but cannot reveal hidden generation state.
+
 ## 14. Caerfaldon district
 
 The MVP district contains:
 
-- Explorer Guild: licensing, rank appraisal, contracts, reports, and party registration.
+- Adventurers' Lodge: licensing, standing appraisal, contracts, reports, and party registration.
 - Market: supplies, equipment, repairs, appraisal, and dynamic prices.
 - Tavern and hiring yard: generated recruits and share negotiation.
 - Sanctuary: healing, funerals, spiritual services, and essence removal.
@@ -312,7 +332,7 @@ Successful commands mutate a serializable `GameState` and emit ordered events. R
 - Combat, armor, wounds, and status effects.
 - Companion AI, perception, personality, and orders.
 - Campaign clock, levy deadlines, and floor closure.
-- First-kill experience, Soul Levels, essences, relics, and explorer rank.
+- First-kill experience, record feats, Soul Levels, essences, relics, and Adventurers' Lodge standing.
 - Economy, recruitment, relationships, healing, and city services.
 - Hybrid generation and conditional rifts.
 
@@ -417,6 +437,7 @@ Completion claims require fresh headless tests, a desktop-editor playthrough, an
 - Character creation and cultural name generation.
 - One expandable Caerfaldon district with nine services.
 - Hero plus up to four autonomous companions.
+- Neutral teams, rivals, opportunistic raiders, camps, and contested claims.
 - Complete city cycle and 168-hour expedition clock.
 - Central Floor 1 zone and four cardinal ecosystems.
 - Four base creature families, eight role variants, four superior species, one possible named superior event, and four rift guardians.
@@ -438,7 +459,7 @@ The Floor 1 package is an MVP candidate, not a single engineering milestone.
 
 1. **Foundation:** fixed-seed command replay produces an identical canonical state hash.
 2. **Combat:** one complete AP fight runs headlessly and visually.
-3. **Expedition:** a generated route always reaches extraction or the authored fallback.
+3. **Expedition:** a generated route passes validation for survivability until forced closure and keeps its intended Floor 2 door reachable, or the authored fallback is used.
 4. **Progression:** first-kill experience, equipment, and essence decisions survive reload.
 5. **Companions:** one autonomous ally obeys, refuses, retreats, and remains deterministic in scenario fixtures.
 6. **City:** a complete levy-to-expedition cycle runs.
@@ -464,10 +485,11 @@ Expansion seams may exist, but excluded features must not drive unused infrastru
 The following decisions are resolved in the focused design step immediately before their owning system is implemented:
 
 - **Combat:** speed ties, initiative snapshot timing, surprise, spawned actors, reaction expiry/order, mid-turn AP changes, incapacitation, and presentation-duration limits.
-- **Floor lifecycle:** closure inside a rift, ascending-floor timer interaction, and emergency extraction rules.
-- **Death and recovery:** surviving companions, corpse access, contractual settlement, and whether revival exists.
+- **Progression credit:** hero kill credit, assists, summons, simultaneous defeats, companion contributions, and record-feat qualification.
+- **Floor lifecycle:** closure inside a rift and ascending-floor timer interaction. Floor 1 has no routine early extraction.
+- **Death and recovery:** surviving companions, inaccessible hero possessions, and contractual settlement. The hero cannot revive in the MVP.
 - **Loot and contracts:** ownership, disputed drops, unpaid shares, and recovered companion property.
-- **Endgame:** how one hero earns the covenant objects associated with multiple peoples.
+- **Endgame:** the original prerequisites and final encounter structure are designed before work begins on Floors 2–10; the MVP assumes no people-associated treasure mapping.
 - **Web lifecycle:** multi-tab conflict policy and platform-specific background throttling responses.
 
 The register is a sequencing rule, not permission to implement ambiguous behavior. Each item must be decided and added to its system specification before related code is written.
@@ -496,4 +518,9 @@ Community references requiring provenance classification:
 - [Races](https://surviving-the-game-as-a-barbarian.fandom.com/wiki/Category%3ARaces)
 - [City and taxation](https://surviving-the-game-as-a-barbarian.fandom.com/wiki/Rafdonia)
 - [Final-gate treasures](https://surviving-the-game-as-a-barbarian.fandom.com/wiki/Genesis_Treasures)
+
+Working review documents:
+
+- [`docs/design/naming-registry.md`](../../design/naming-registry.md)
+- [`docs/design/source-provenance.md`](../../design/source-provenance.md)
 
