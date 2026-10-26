@@ -12,22 +12,23 @@ Source-specific proper nouns, named institutions, protected characters, propriet
 
 ## Approved mappings
 
-| Reference term | Shipping status | Approved project term | Review note |
-|---|---|---|---|
-| Dungeon & Stone | Prohibited | Crypts & Cairns | Original title; marketplace search required before release |
-| Rafdonia | Prohibited | Caerfaldon | Original city name with a British linguistic character |
-| Explorer Guild | Prohibited as named institution | Adventurers' Lodge | Original institutional identity and presentation required |
-| Magic Stone / Mana Stone | Prohibited as setting-specific resource label | Aetherstone | Resource behavior remains source-inspired |
-| Numbered Items | Prohibited as named artifact system | Runemarked Relics | Identifiers, histories, drawbacks, art, and effects must be original |
-| Dimensional Square | Prohibited as named location | Portal Plaza | Generic function, original architecture and civic role |
-| Great Sage monument | Prohibited as named landmark | Cairn Compass | Navigation/time function only; no copied offering event |
-| Barbarian tribe | Alternative retained | Tribal Clans / Tribal People | Tribal People are human clans; generic “barbarian” may appear descriptively but is not their formal name |
-| Humans | Generic name retained | Humans | Commoner and noble are social backgrounds, not separate species |
-| Dwarves | Generic name retained | Dwarves | Original culture, institutions, and character designs are still required |
-| Fairies | Alternative retained | Elves | Generic elven fantasy vocabulary is allowed; source-specific characters and culture are not |
-| Beastmen | Alternative retained | Beastkin | Original culture, subgroups, and presentation required |
-| Draconian tribe | Re-authored | Titanborn | All dragon-specific lore, powers, visuals, and materials are replaced by original titan lineage and titan-forged traditions |
-| Genesis Treasures | Prohibited | No MVP equivalent | Full-campaign endgame requires an original design |
+| Reference term | Source confidence | Shipping status | Approved project term | Transformation rationale | Manual review status |
+|---|---|---|---|---|---|
+| Dungeon & Stone | Officially confirmed | Prohibited | Crypts & Cairns | Original title; marketplace and trademark searches remain required | Required before release |
+| Rafdonia | Officially confirmed | Prohibited | Caerfaldon | Original city name with a British linguistic character and distinct civic history | Approved for design; release search required |
+| Explorer Guild | Community-referenced | Prohibited as named institution | Adventurers' Lodge | Original institutional identity, services, architecture, and presentation | Approved |
+| Magic Stone / Mana Stone | Community-referenced | Prohibited as setting-specific resource label | Aetherstone | Source-inspired economic function with an original material identity and conversion economy | Approved |
+| Numbered Items | Community-referenced | Prohibited as named artifact system | Runemarked Relics | Original identifiers, histories, drawbacks, art, and effects | Required per relic |
+| Dimensional Square | Community-referenced | Prohibited as named location | Portal Plaza | Generic transport function with original architecture and civic role | Approved |
+| Great Sage monument | Community-referenced | Prohibited as named landmark | Cairn Compass | Navigation and timekeeping only; no copied offering, rift-opening, or plot event | Approved |
+| Barbarian tribe | Community-referenced | Alternative retained | Tribal People | Formal people name is always Tribal People; tribal clans are their social organizations, and “barbarian” may appear only as a generic description | Approved |
+| Humans | Community-referenced | Generic name retained | Humans | Commoner and noble are social backgrounds, not separate species | Approved |
+| Dwarves | Community-referenced | Generic name retained | Dwarves | Generic fantasy name retained; culture, institutions, and character designs remain original | Required during culture and art review |
+| Fairies | Community-referenced | Alternative retained | Elves | Generic elven vocabulary with original culture, spirit practices, and character designs | Required during culture and art review |
+| Beastmen | Community-referenced | Alternative retained | Beastkin | Original culture, subgroups, ancestral-beast system, and presentation | Required during culture and art review |
+| Draconian tribe | Community-referenced | Re-authored | Titanborn | Dragon-specific lore, powers, visuals, and materials become an original titan lineage and titan-forged tradition | Required during culture, content, and art review |
+| Genesis Treasures | Community-referenced | Prohibited | No MVP equivalent | Full-campaign endgame receives original prerequisites, rewards, and social structure | Deferred until Floors 2–10 design |
+| Stone of Revival and source revival rules | Community-referenced | Prohibited | No MVP equivalent; no hero revival | Preserves knowledge-only permadeath and avoids copying a source-specific artifact or its conditions | Approved for MVP |
 
 ## Allowed generic system terms
 

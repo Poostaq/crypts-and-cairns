@@ -2,9 +2,9 @@
 
 **Date:** 2026-10-25
 
-**Status:** Approved design baseline, revision 2
+**Status:** Approved design baseline, revision 3
 
-**Target:** Godot 4, desktop browsers, single-player, turn-based pixel-art roguelike
+**Target:** Godot 4.7.2-stable, desktop browsers, single-player, turn-based pixel-art roguelike
 
 ## 1. Product statement
 
@@ -49,7 +49,7 @@ Community summaries are evidence, not instructions or unquestionable canon. The 
 
 ## 3. Platform and presentation
 
-- Godot 4 with a pinned engine version.
+- Godot 4.7.2-stable. Engine changes require an explicit compatibility review and a recorded version update before project files or exports are upgraded.
 - GDScript only; no C#, GDExtension, or native-only runtime dependencies.
 - Compatibility renderer and single-threaded Web export.
 - Desktop Chromium and Firefox are primary browser targets.
@@ -85,7 +85,7 @@ All six peoples and fifteen people-and-class combinations are available in the F
 
 Tribal People are human, but their clan upbringing and inherited rites make them a distinct playable people. The Humans option represents Caerfaldon's ordinary urban humans in the MVP. Commoner and noble are future Human backgrounds, not separate species or classes.
 
-A people determines culture, generated naming rules, base attributes, available classes, equipment aptitudes, dialogue options, and city obligations. A class determines starting training and equipment, not the final build. A Human Fighter and Tribal Fighter share the same core class contract but receive different origin modifiers and class expressions. Essences can bend characters into unusual roles without erasing their origin.
+A people determines culture, generated naming rules, base attributes, `allowed_class_ids`, equipment aptitudes, dialogue options, and city obligations. A reusable class definition determines starting training and equipment, not the final build. A Human Fighter and Tribal Fighter both reference `class.fighter`; their different origin modifiers and class expressions come from people data and, where needed, a separate people-class expression record such as `people_class.tribal.fighter`. Essences can bend characters into unusual roles without erasing their origin.
 
 Class identities remain simple:
 
@@ -167,7 +167,7 @@ Ranked creature bodies dissolve after death and leave applicable drops. Unranked
 
 ## 10. Floor 1
 
-Floor 1 lasts exactly 168 in-world hours. Closure expels surviving explorers who remain on the floor.
+Floor 1 lasts exactly 168 in-world hours. Closure expels surviving explorers who remain on the floor. The MVP has no voluntary or emergency early extraction: a living hero returns to Caerfaldon only through forced closure. Floor 2 doors can be discovered and opened, but not traversed.
 
 The floor is a luminous cave network with a central navigation landmark called the **Cairn Compass** and four cardinal ecosystems:
 
@@ -270,7 +270,7 @@ The MVP district contains:
 - Alchemist: material conversion and essence analysis.
 - Lodging: rest, storage, planning, and companion conversations.
 - Levy office: deadlines, debts, exemptions, and penalties.
-- Portal plaza: monthly entry and expedition assembly.
+- Portal Plaza: monthly entry and expedition assembly.
 
 City actions advance hours or days. NPC schedules and services use the same location abstractions intended for future districts.
 
@@ -282,7 +282,7 @@ The account-level Chronicle retains only:
 
 - Bestiary observations.
 - Confirmed essence properties.
-- Recipes and monument combinations.
+- Discovered recipes.
 - Landmark and rift notes.
 - Encountered relic descriptions.
 - Death records.
@@ -361,13 +361,16 @@ Gameplay definitions use reviewable JSON. Godot resources handle visual and audi
 Definitions use stable namespaced IDs such as:
 
 - `people.tribal`
-- `class.tribal.fighter`
+- `class.fighter`
+- `people_class.tribal.fighter`
 - `monster.ashcap_raider`
 - `essence.ashcap_raider`
 - `region.depth1.north`
 - `rift.depth1.ashcap_trial`
 
 Display text uses localization keys. Definitions are immutable during a campaign. Mutable state stores stable IDs and runtime values, never scene nodes or resource objects.
+
+Each people definition owns an `allowed_class_ids` list containing reusable class IDs. Optional `people_class.*` records may override presentation, starting equipment, or origin-specific modifiers for one valid pairing; they never replace the core class definition or make an otherwise forbidden pairing legal. Validators reject unknown classes, duplicate pairings, and expression records absent from the owning people's allowlist.
 
 Authoritative JSON values use integral base units: AP units, ticks, basis points, grams, millilitres, and similar documented units. Fractional authoritative values are rejected. Presentation-only values may become floats after leaving the domain.
 
@@ -498,7 +501,7 @@ The following decisions are resolved in the focused design step immediately befo
 
 - **Combat:** speed ties, initiative snapshot timing, surprise, spawned actors, reaction expiry/order, mid-turn AP changes, incapacitation, and presentation-duration limits.
 - **Progression credit:** hero kill credit, assists, summons, simultaneous defeats, companion contributions, and record-feat qualification.
-- **Floor lifecycle:** closure inside a rift and ascending-floor timer interaction. Floor 1 has no routine early extraction.
+- **Floor lifecycle:** closure inside a rift and ascending-floor timer interaction. The MVP provides no voluntary or emergency early extraction of any kind; a living hero leaves Floor 1 only through forced closure. Floor 2 doors may be discovered and opened but cannot be traversed in the MVP.
 - **Death and recovery:** surviving companions, inaccessible hero possessions, and contractual settlement. The hero cannot revive in the MVP.
 - **Loot and contracts:** ownership, disputed drops, unpaid shares, and recovered companion property.
 - **Endgame:** the original prerequisites and final encounter structure are designed before work begins on Floors 2–10; the MVP assumes no people-associated treasure mapping.
@@ -513,7 +516,8 @@ Primary and official pages:
 - [Official WEBTOON series page](https://us.webtoons.com/en/fantasy/surviving-the-game-as-a-barbarian/list?title_no=5515)
 - [Official Naver web novel listing](https://series.naver.com/novel/detail.series?productNo=6037518)
 - [Official Naver webtoon listing](https://series.naver.com/comic/detail.series?productNo=9597018)
-- [Godot Web export documentation](https://docs.godotengine.org/en/4.5/tutorials/export/exporting_for_web.html)
+- [Godot 4.7.2 release](https://godotengine.org/article/maintenance-release-godot-4-7-2/)
+- [Godot 4.7 Web export documentation](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_web.html)
 - [Godot renderer documentation](https://docs.godotengine.org/en/stable/tutorials/rendering/renderers.html)
 - [Godot data-path documentation](https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html)
 - [MDN Web Crypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
