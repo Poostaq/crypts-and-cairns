@@ -7,4 +7,5 @@ const CASE_PATHS: Array[String] = [
 	"res://tests/foundation/canonical_json_test.gd",
 	"res://tests/foundation/pcg32_test.gd",
 	"res://tests/foundation/rng_streams_test.gd",
+	"res://tests/foundation/command_processor_test.gd",
 ]
