@@ -1,0 +1,10 @@
+{
+  "content_schema_version": 1,
+  "definition_files": [
+    {"family": "people", "path": "res://content/core/peoples.json"},
+    {"family": "class", "path": "res://content/core/classes.json"}
+  ],
+  "localization_files": [
+    "res://content/localization/en.json"
+  ]
+}

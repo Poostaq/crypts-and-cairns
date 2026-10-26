@@ -1,0 +1,15 @@
+{
+  "class.berserker.name": "Berserker",
+  "class.fighter.name": "Fighter",
+  "class.hunter.name": "Hunter",
+  "class.knight.name": "Knight",
+  "class.mage.name": "Mage",
+  "class.paladin.name": "Paladin",
+  "class.rogue.name": "Rogue",
+  "people.beastkin.name": "Beastkin",
+  "people.dwarf.name": "Dwarves",
+  "people.elf.name": "Elves",
+  "people.human.name": "Humans",
+  "people.titanborn.name": "Titanborn",
+  "people.tribal.name": "Tribal People"
+}

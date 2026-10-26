@@ -15,6 +15,9 @@ const GameStateFactory = preload(
 const JsonIntegerNormalizer = preload(
 	"res://src/platform/json/json_integer_normalizer.gd"
 )
+const JsonContentRepository = preload(
+	"res://src/platform/content/json_content_repository.gd"
+)
 const ReplayRunner = preload(
 	"res://src/application/replay/replay_runner.gd"
 )
@@ -42,11 +45,25 @@ func run() -> void:
 
 	var fixture: Dictionary = fixture_result["value"]
 	var commands: Array = fixture["commands"]
+	var loaded_content: Dictionary = JsonContentRepository.load_catalog(
+		"res://content/manifest.json"
+	)
+	assert_true(
+		loaded_content["ok"],
+		"foundation catalog loads for replay"
+	)
+	if not loaded_content["ok"]:
+		return
 	var initial: Dictionary = GameStateFactory.create(
 		8675309,
-		"fixture-content",
+		loaded_content["content_hash"],
 		"test"
 	)["state"]
+	assert_equal(
+		initial["meta"]["content_hash"],
+		loaded_content["content_hash"],
+		"replay state is bound to authoritative foundation content"
+	)
 	var initial_hash: String = StateHasher.hash_state(initial)["hash"]
 
 	var first_recording: Dictionary = ReplayRunner.record(
