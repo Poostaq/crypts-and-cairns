@@ -1,0 +1,7 @@
+{
+  "commands": [
+    {"sequence": 1, "type": "test.advance", "payload": {"ticks": 5, "stream_id": "world"}},
+    {"sequence": 2, "type": "test.advance", "payload": {"ticks": 7, "stream_id": "loot"}},
+    {"sequence": 3, "type": "test.advance", "payload": {"ticks": 11, "stream_id": "world"}}
+  ]
+}
