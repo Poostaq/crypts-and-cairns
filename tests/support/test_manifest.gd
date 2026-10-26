@@ -10,4 +10,5 @@ const CASE_PATHS: Array[String] = [
 	"res://tests/foundation/command_processor_test.gd",
 	"res://tests/foundation/replay_determinism_test.gd",
 	"res://tests/foundation/content_validator_test.gd",
+	"res://tests/foundation/content_repository_test.gd",
 ]

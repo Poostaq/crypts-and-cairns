@@ -1,0 +1,9 @@
+[
+  {"id": "class.berserker", "display_name_key": "class.berserker.name"},
+  {"id": "class.fighter", "display_name_key": "class.fighter.name"},
+  {"id": "class.hunter", "display_name_key": "class.hunter.name"},
+  {"id": "class.knight", "display_name_key": "class.knight.name"},
+  {"id": "class.mage", "display_name_key": "class.mage.name"},
+  {"id": "class.paladin", "display_name_key": "class.paladin.name"},
+  {"id": "class.rogue", "display_name_key": "class.rogue.name"}
+]

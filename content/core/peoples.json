@@ -1,0 +1,8 @@
+[
+  {"id": "people.beastkin", "display_name_key": "people.beastkin.name", "allowed_class_ids": ["class.hunter", "class.rogue"]},
+  {"id": "people.dwarf", "display_name_key": "people.dwarf.name", "allowed_class_ids": ["class.fighter", "class.knight"]},
+  {"id": "people.elf", "display_name_key": "people.elf.name", "allowed_class_ids": ["class.hunter", "class.mage"]},
+  {"id": "people.human", "display_name_key": "people.human.name", "allowed_class_ids": ["class.fighter", "class.knight", "class.mage", "class.rogue"]},
+  {"id": "people.titanborn", "display_name_key": "people.titanborn.name", "allowed_class_ids": ["class.knight", "class.paladin", "class.mage"]},
+  {"id": "people.tribal", "display_name_key": "people.tribal.name", "allowed_class_ids": ["class.fighter", "class.berserker"]}
+]

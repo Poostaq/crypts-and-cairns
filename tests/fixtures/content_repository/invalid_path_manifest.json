@@ -1,0 +1,7 @@
+{
+  "content_schema_version": 1,
+  "definition_files": [
+    {"family": "class", "path": "user://classes.json"}
+  ],
+  "localization_files": []
+}
