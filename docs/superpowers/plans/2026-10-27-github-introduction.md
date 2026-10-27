@@ -579,6 +579,39 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Get-NormalizedSha256 {
+	param(
+		[Parameter(Mandatory)]
+		[string]$Path
+	)
+
+	$content = [System.IO.File]::ReadAllText($Path)
+	$normalized = $content.Replace("`r`n", "`n").Replace("`r", "`n")
+	$utf8WithoutBom = [System.Text.UTF8Encoding]::new($false)
+	$bytes = $utf8WithoutBom.GetBytes($normalized)
+	return [Convert]::ToHexString(
+		[System.Security.Cryptography.SHA256]::HashData($bytes)
+	).ToLowerInvariant()
+}
+
+function Get-JsonPropertyValue {
+	param(
+		[AllowNull()]
+		[object]$InputObject,
+		[Parameter(Mandatory)]
+		[string]$Name
+	)
+
+	if ($null -eq $InputObject) {
+		return $null
+	}
+	$property = $InputObject.PSObject.Properties[$Name]
+	if ($null -eq $property) {
+		return $null
+	}
+	return $property.Value
+}
+
 $failures = [System.Collections.Generic.List[string]]::new()
 $requiredFiles = @(
 	'README.md',
@@ -600,47 +633,95 @@ foreach ($relativePath in $requiredFiles) {
 	}
 }
 
+$licenseNames = @('LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENSE.rst')
 $licenseFiles = @(
-	Get-ChildItem -LiteralPath $RepositoryRoot -File -Filter 'LICENSE*'
+	Get-ChildItem -LiteralPath $RepositoryRoot -File |
+		Where-Object { $licenseNames -icontains $_.Name }
 )
 if ($licenseFiles.Count -gt 0) {
 	$failures.Add('A license file exists before licensing has been approved.')
 }
 
-$workflowPath = Join-Path $RepositoryRoot '.github/workflows/foundation.yml'
-if (Test-Path -LiteralPath $workflowPath -PathType Leaf) {
-	$workflow = Get-Content -LiteralPath $workflowPath -Raw
-	$requiredWorkflowFragments = @(
-		'name: Foundation',
-		'permissions:',
-		'contents: read',
-		'timeout-minutes: 15',
-		'cancel-in-progress: true',
-		'version: 4.7.2',
-		'use-dotnet: false',
-		'include-templates: true',
-		'.\scripts\test.ps1',
-		'.\scripts\export-web.ps1',
-		'retention-days: 7',
-		'11d5960a326750d5838078e36cf38b85af677262',
-		'ac93246ea68518a384c1c280a496e5989341f2f6',
-		'ea165f8d65b6e75b540449e92b4886f43607fa02'
-	)
-	foreach ($fragment in $requiredWorkflowFragments) {
-		if (-not $workflow.Contains($fragment)) {
-			$failures.Add("Workflow is missing required fragment: $fragment")
+# Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
+$expectedPolicyHashes = [ordered]@{
+	'.github/workflows/foundation.yml' = '531dd09d807eddc967ef6d569704ce366ad0e7cfe25d068f9312d418aadd38e8'
+	'.github/rulesets/main.json' = 'a1495c817a1c8d7ffcd76e8a3e8161177c913cb514ab4e9e79d7cf24ceefac4f'
+}
+foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
+	$absolutePath = Join-Path $RepositoryRoot $entry.Key
+	if (Test-Path -LiteralPath $absolutePath -PathType Leaf) {
+		$actualHash = Get-NormalizedSha256 -Path $absolutePath
+		if ($actualHash -cne $entry.Value) {
+			$failures.Add("Reviewed policy content changed: $($entry.Key)")
 		}
 	}
-	$forbiddenWorkflowPatterns = @(
-		'(?im)^\s*pages:\s*write\s*$',
-		'(?im)^\s*id-token:\s*write\s*$',
-		'actions/deploy-pages',
-		'softprops/action-gh-release',
-		'gh\s+release\s+create'
-	)
-	foreach ($pattern in $forbiddenWorkflowPatterns) {
-		if ($workflow -match $pattern) {
-			$failures.Add("Workflow contains forbidden deployment behavior: $pattern")
+}
+
+$rulesetPath = Join-Path $RepositoryRoot '.github/rulesets/main.json'
+if (Test-Path -LiteralPath $rulesetPath -PathType Leaf) {
+	$ruleset = $null
+	try {
+		$ruleset = Get-Content -LiteralPath $rulesetPath -Raw | ConvertFrom-Json -Depth 100
+	} catch {
+		$failures.Add("Ruleset JSON is invalid: $($_.Exception.Message)")
+	}
+	if ($null -ne $ruleset) {
+		if ((Get-JsonPropertyValue -InputObject $ruleset -Name 'name') -cne 'Protect main') {
+			$failures.Add('Ruleset name must be Protect main.')
+		}
+		if ((Get-JsonPropertyValue -InputObject $ruleset -Name 'target') -cne 'branch') {
+			$failures.Add('Ruleset target must be branch.')
+		}
+		if ((Get-JsonPropertyValue -InputObject $ruleset -Name 'enforcement') -cne 'active') {
+			$failures.Add('Ruleset enforcement must be active.')
+		}
+
+		$conditions = Get-JsonPropertyValue -InputObject $ruleset -Name 'conditions'
+		$refName = Get-JsonPropertyValue -InputObject $conditions -Name 'ref_name'
+		$includedRefs = @(Get-JsonPropertyValue -InputObject $refName -Name 'include')
+		$excludedRefs = @(Get-JsonPropertyValue -InputObject $refName -Name 'exclude')
+		if ($includedRefs.Count -ne 1 -or $includedRefs[0] -cne '~DEFAULT_BRANCH' -or $excludedRefs.Count -ne 0) {
+			$failures.Add('Ruleset conditions must target only the default branch.')
+		}
+
+		$rules = @(Get-JsonPropertyValue -InputObject $ruleset -Name 'rules')
+		$expectedRuleTypes = @(
+			'deletion',
+			'non_fast_forward',
+			'required_linear_history',
+			'pull_request',
+			'required_status_checks'
+		)
+		$actualRuleTypes = @($rules | ForEach-Object {
+			Get-JsonPropertyValue -InputObject $_ -Name 'type'
+		})
+		if (($actualRuleTypes -join "`n") -cne ($expectedRuleTypes -join "`n")) {
+			$failures.Add('Ruleset rule types do not match the approved protections.')
+		}
+
+		$statusRules = @($rules | Where-Object {
+			(Get-JsonPropertyValue -InputObject $_ -Name 'type') -ceq 'required_status_checks'
+		})
+		if ($statusRules.Count -ne 1) {
+			$failures.Add('Ruleset must contain exactly one required_status_checks rule.')
+		} else {
+			$statusParameters = Get-JsonPropertyValue -InputObject $statusRules[0] -Name 'parameters'
+			$statusChecks = @(Get-JsonPropertyValue -InputObject $statusParameters -Name 'required_status_checks')
+			if ($statusChecks.Count -ne 1) {
+				$failures.Add('Ruleset must contain exactly one required status check.')
+			} else {
+				$context = Get-JsonPropertyValue -InputObject $statusChecks[0] -Name 'context'
+				$integrationId = Get-JsonPropertyValue -InputObject $statusChecks[0] -Name 'integration_id'
+				if ($context -cne 'Verify foundation' -or $integrationId -ne 15368) {
+					$failures.Add('Ruleset status check must be Verify foundation from GitHub Actions integration 15368.')
+				}
+			}
+			if ((Get-JsonPropertyValue -InputObject $statusParameters -Name 'do_not_enforce_on_create') -ne $true) {
+				$failures.Add('Ruleset status checks must allow branch creation.')
+			}
+			if ((Get-JsonPropertyValue -InputObject $statusParameters -Name 'strict_required_status_checks_policy') -ne $true) {
+				$failures.Add('Ruleset status checks must use strict policy.')
+			}
 		}
 	}
 }
@@ -707,7 +788,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Install Godot 4.7.2
         uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6
@@ -733,7 +814,7 @@ jobs:
           .\scripts\export-web.ps1 -GodotBin $godot
 
       - name: Upload Web build
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: crypts-and-cairns-web-${{ github.sha }}
           path: build/web
@@ -778,7 +859,7 @@ Create '.github/rulesets/main.json' with exactly:
       "parameters": {
         "do_not_enforce_on_create": true,
         "required_status_checks": [
-          {"context": "Verify foundation"}
+          {"context": "Verify foundation", "integration_id": 15368}
         ],
         "strict_required_status_checks_policy": true
       }
@@ -1068,13 +1149,20 @@ Run:
 $account = gh api user | ConvertFrom-Json
 $owner = [string]$account.login
 $repoName = 'crypts-and-cairns'
-$checks = @(gh api "repos/$owner/$repoName/commits/main/check-runs" --jq '.check_runs[].name')
-if ($checks -notcontains 'Verify foundation') {
-	throw "Expected status check is missing. Found: $($checks -join ', ')"
+$checksResponse = gh api "repos/$owner/$repoName/commits/main/check-runs" | ConvertFrom-Json
+$checks = @($checksResponse.check_runs)
+$matchingChecks = @($checks | Where-Object {
+	$_.name -eq 'Verify foundation' -and
+	$_.app.slug -eq 'github-actions' -and
+	[int64]($_.app.id) -eq 15368
+})
+if ($matchingChecks.Count -eq 0) {
+	$found = @($checks | ForEach-Object { "$($_.name) [$($_.app.slug):$($_.app.id)]" })
+	throw "Expected GitHub Actions status check is missing. Found: $($found -join ', ')"
 }
 ~~~
 
-Expected: 'Verify foundation' is present.
+Expected: 'Verify foundation' is present from GitHub Actions ('github-actions', app ID 15368).
 
 - [ ] **Step 4: Download and inspect the Web artifact without overwriting**
 
@@ -1182,14 +1270,23 @@ foreach ($requiredType in @('deletion', 'non_fast_forward', 'required_linear_his
 		throw "Protect main is missing rule: $requiredType"
 	}
 }
-$statusRule = @($ruleset.rules | Where-Object type -eq 'required_status_checks')[0]
-$contexts = @($statusRule.parameters.required_status_checks.context)
-if ($contexts -notcontains 'Verify foundation') {
-	throw 'Protect main does not require Verify foundation.'
+$statusRules = @($ruleset.rules | Where-Object type -eq 'required_status_checks')
+if ($statusRules.Count -ne 1) {
+	throw 'Protect main must contain exactly one required_status_checks rule.'
+}
+$statusRule = $statusRules[0]
+$statusChecks = @($statusRule.parameters.required_status_checks)
+if ($statusChecks.Count -ne 1 -or
+	$statusChecks[0].context -ne 'Verify foundation' -or
+	[int64]($statusChecks[0].integration_id) -ne 15368) {
+	throw 'Protect main must require Verify foundation from GitHub Actions integration 15368.'
+}
+if (-not $statusRule.parameters.strict_required_status_checks_policy) {
+	throw 'Protect main must require the latest main before merging.'
 }
 ~~~
 
-Expected: one active ruleset with all approved protections and the strict 'Verify foundation' check.
+Expected: one active ruleset with all approved protections and the strict 'Verify foundation' check bound to GitHub Actions integration 15368.
 
 ## Task 9: Final End-to-End Verification and Handoff
 
