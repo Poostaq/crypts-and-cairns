@@ -14,6 +14,11 @@ static func parse_and_normalize(json_text: String) -> Dictionary:
 			"$ contains invalid JSON at line %d: %s" %
 				[source_parser.get_error_line(), source_parser.get_error_message()]
 		)
+	var duplicate_key_result: Dictionary = _validate_unique_object_keys(
+		json_text
+	)
+	if not duplicate_key_result["ok"]:
+		return duplicate_key_result
 
 	var sentinel_key := "__crypts_internal_json_integer__"
 	while _contains_dictionary_key(source_parser.data, sentinel_key):
@@ -37,6 +42,200 @@ static func parse_and_normalize(json_text: String) -> Dictionary:
 	if not restored["ok"]:
 		return restored
 	return normalize(restored["value"])
+
+
+static func _validate_unique_object_keys(json_text: String) -> Dictionary:
+	var cursor: Array[int] = [0]
+	var scan_result: Dictionary = _scan_json_value(
+		json_text,
+		cursor,
+		"$",
+		0
+	)
+	if not scan_result["ok"]:
+		return scan_result
+	_skip_json_whitespace(json_text, cursor)
+	if cursor[0] != json_text.length():
+		return _error("$ could not scan validated authoritative JSON")
+	return {"ok": true}
+
+
+static func _scan_json_value(
+	json_text: String,
+	cursor: Array[int],
+	path: String,
+	depth: int
+) -> Dictionary:
+	if depth > MAX_NESTING_DEPTH:
+		return _error(
+			"%s exceeds maximum nesting depth %d" %
+				[path, MAX_NESTING_DEPTH]
+		)
+	_skip_json_whitespace(json_text, cursor)
+	if cursor[0] >= json_text.length():
+		return _error("%s ended while scanning validated JSON" % path)
+
+	var character: String = json_text.substr(cursor[0], 1)
+	match character:
+		"{":
+			return _scan_json_object(json_text, cursor, path, depth)
+		"[":
+			return _scan_json_array(json_text, cursor, path, depth)
+		"\"":
+			return _scan_json_string(json_text, cursor)
+		_:
+			while cursor[0] < json_text.length():
+				character = json_text.substr(cursor[0], 1)
+				if _is_json_token_delimiter(character):
+					break
+				cursor[0] += 1
+			return {"ok": true}
+
+
+static func _scan_json_object(
+	json_text: String,
+	cursor: Array[int],
+	path: String,
+	depth: int
+) -> Dictionary:
+	var seen_keys: Dictionary = {}
+	cursor[0] += 1
+	_skip_json_whitespace(json_text, cursor)
+	if json_text.substr(cursor[0], 1) == "}":
+		cursor[0] += 1
+		return {"ok": true}
+
+	while cursor[0] < json_text.length():
+		var key_start: int = cursor[0]
+		var key_token_result: Dictionary = _scan_json_string(
+			json_text,
+			cursor
+		)
+		if not key_token_result["ok"]:
+			return key_token_result
+		var decoded_key: Variant = JSON.parse_string(
+			key_token_result["token"]
+		)
+		if typeof(decoded_key) != TYPE_STRING:
+			return _error(
+				"%s contains an invalid object key at character %d" %
+					[path, key_start]
+			)
+		var key: String = decoded_key
+		if seen_keys.has(key):
+			return _error(
+				"%s contains duplicate object key %s at character %d" % [
+					path,
+					JSON.stringify(key),
+					key_start,
+				]
+			)
+		seen_keys[key] = true
+
+		_skip_json_whitespace(json_text, cursor)
+		if json_text.substr(cursor[0], 1) != ":":
+			return _error("%s could not scan validated object" % path)
+		cursor[0] += 1
+		var child_result: Dictionary = _scan_json_value(
+			json_text,
+			cursor,
+			_path_child(path, key),
+			depth + 1
+		)
+		if not child_result["ok"]:
+			return child_result
+
+		_skip_json_whitespace(json_text, cursor)
+		var separator: String = json_text.substr(cursor[0], 1)
+		if separator == "}":
+			cursor[0] += 1
+			return {"ok": true}
+		if separator != ",":
+			return _error("%s could not scan validated object" % path)
+		cursor[0] += 1
+		_skip_json_whitespace(json_text, cursor)
+	return _error("%s ended while scanning validated object" % path)
+
+
+static func _scan_json_array(
+	json_text: String,
+	cursor: Array[int],
+	path: String,
+	depth: int
+) -> Dictionary:
+	cursor[0] += 1
+	_skip_json_whitespace(json_text, cursor)
+	if json_text.substr(cursor[0], 1) == "]":
+		cursor[0] += 1
+		return {"ok": true}
+
+	var index: int = 0
+	while cursor[0] < json_text.length():
+		var child_result: Dictionary = _scan_json_value(
+			json_text,
+			cursor,
+			_path_child(path, str(index)),
+			depth + 1
+		)
+		if not child_result["ok"]:
+			return child_result
+		index += 1
+
+		_skip_json_whitespace(json_text, cursor)
+		var separator: String = json_text.substr(cursor[0], 1)
+		if separator == "]":
+			cursor[0] += 1
+			return {"ok": true}
+		if separator != ",":
+			return _error("%s could not scan validated array" % path)
+		cursor[0] += 1
+	return _error("%s ended while scanning validated array" % path)
+
+
+static func _scan_json_string(
+	json_text: String,
+	cursor: Array[int]
+) -> Dictionary:
+	var token_start: int = cursor[0]
+	if json_text.substr(token_start, 1) != "\"":
+		return _error(
+			"$ expected a string at character %d in validated JSON" %
+				token_start
+		)
+	cursor[0] += 1
+	while cursor[0] < json_text.length():
+		var character: String = json_text.substr(cursor[0], 1)
+		if character == "\\":
+			cursor[0] += 2
+			continue
+		cursor[0] += 1
+		if character == "\"":
+			return {
+				"ok": true,
+				"token": json_text.substr(
+					token_start,
+					cursor[0] - token_start
+				),
+			}
+	return _error(
+		"$ ended while scanning a string at character %d" % token_start
+	)
+
+
+static func _skip_json_whitespace(
+	json_text: String,
+	cursor: Array[int]
+) -> void:
+	while cursor[0] < json_text.length():
+		var character: String = json_text.substr(cursor[0], 1)
+		if (
+			character != " "
+			and character != "\t"
+			and character != "\r"
+			and character != "\n"
+		):
+			return
+		cursor[0] += 1
 
 
 # Use parse_and_normalize() for authoritative JSON text. normalize() is the

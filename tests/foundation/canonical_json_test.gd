@@ -76,6 +76,35 @@ func run() -> void:
 		not parse_failure["ok"] and String(parse_failure["error"]).contains("invalid JSON"),
 		"strict parsing returns a structured JSON parse error"
 	)
+	var duplicate_key: Dictionary = JsonIntegerNormalizer.parse_and_normalize(
+		"{\"a\":1,\"a\":2}"
+	)
+	assert_true(
+		not duplicate_key["ok"]
+		and String(duplicate_key["error"]).contains("duplicate object key"),
+		"authoritative JSON rejects duplicate object keys"
+	)
+	var escaped_duplicate_key: Dictionary = (
+		JsonIntegerNormalizer.parse_and_normalize(
+			"{\"a\":1,\"\\u0061\":2}"
+		)
+	)
+	assert_true(
+		not escaped_duplicate_key["ok"]
+		and String(escaped_duplicate_key["error"]).contains(
+			"duplicate object key"
+		),
+		"escaped-equivalent object keys are duplicates"
+	)
+	var separately_scoped_keys: Dictionary = (
+		JsonIntegerNormalizer.parse_and_normalize(
+			"{\"left\":{\"a\":1},\"right\":{\"a\":2}}"
+		)
+	)
+	assert_true(
+		separately_scoped_keys["ok"],
+		"the same key remains valid in separate nested objects"
+	)
 	var sentinel_collision: Dictionary = JsonIntegerNormalizer.parse_and_normalize(
 		"{\"__crypts_internal_json_integer__\":\"1.5e3\",\"value\":2}"
 	)
