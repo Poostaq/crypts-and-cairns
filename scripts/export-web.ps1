@@ -83,6 +83,16 @@ foreach ($requiredName in @(
 	}
 }
 
+$pckPath = Join-Path $outputDirectory 'index.pck'
+$pckVerifier = Join-Path $PSScriptRoot 'verify-web-pck.ps1'
+& $pckVerifier -PckPath $pckPath -ProjectRoot $projectRoot
+
+$pckVerifierTest = Join-Path $projectRoot 'tests/scripts/web_pck_verifier_test.ps1'
+& $pckVerifierTest `
+	-PckPath $pckPath `
+	-ProjectRoot $projectRoot `
+	-VerifierPath $pckVerifier
+
 foreach ($forbiddenRoot in @(
 	'docs',
 	'tests',
