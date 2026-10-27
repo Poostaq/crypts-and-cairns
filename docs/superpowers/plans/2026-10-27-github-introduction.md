@@ -957,7 +957,7 @@ Run:
 	-RequireNoRemote
 ~~~
 
-Expected: all ten isolated mutation cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. The validator fails closed on Git command errors, dirty state, remotes, identity drift, large blobs, secrets in text or binary blobs, commit messages, and directly or indirectly reachable annotated tags.
+Expected: all 19 isolated cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. Coverage includes GitHub token families, AWS access-key IDs and assigned secret keys, PEM private-key headers, text and binary blobs, commit messages, directly or indirectly reachable annotated tags, and a negative case for an unassigned AWS secret-key variable name. The validator also fails closed on Git command errors, dirty state, remotes, identity drift, and large blobs.
 
 - [ ] **Step 4: Verify the final diff and recent history**
 

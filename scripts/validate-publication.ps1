@@ -15,9 +15,9 @@ $failures = [System.Collections.Generic.List[string]]::new()
 $secretLocations = [System.Collections.Generic.HashSet[string]]::new(
 	[System.StringComparer]::Ordinal
 )
-$secretEre = 'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|password[[:space:]]*[:=]|secret[[:space:]]*[:=]|api[_-]?key[[:space:]]*[:=]'
+$secretEre = 'gh(p|o|u|s|r)_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|(AKIA|ASIA)[0-9A-Z]{16}|BEGIN ((RSA|OPENSSH|EC|DSA|ENCRYPTED) )?PRIVATE KEY|aws_secret_access_key[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=]{20,}|password[[:space:]]*[:=]|secret[[:space:]]*[:=]|api[_-]?key[[:space:]]*[:=]'
 $secretRegex = [System.Text.RegularExpressions.Regex]::new(
-	'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|BEGIN (?:RSA|OPENSSH|EC|DSA) PRIVATE KEY|password\s*[:=]|secret\s*[:=]|api[_-]?key\s*[:=]',
+	'gh(?:p|o|u|s|r)_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|(?:AKIA|ASIA)[0-9A-Z]{16}|BEGIN (?:(?:RSA|OPENSSH|EC|DSA|ENCRYPTED) )?PRIVATE KEY|aws_secret_access_key\s*[:=]\s*[A-Za-z0-9/+=]{20,}|password\s*[:=]|secret\s*[:=]|api[_-]?key\s*[:=]',
 	(
 		[System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
 		[System.Text.RegularExpressions.RegexOptions]::CultureInvariant
