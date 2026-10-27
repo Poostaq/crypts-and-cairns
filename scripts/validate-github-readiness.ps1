@@ -83,7 +83,7 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
-	'.github/workflows/foundation.yml' = 'bccd43c0c5a920a68211c4a40ec744eb595322435a9929a5c256c3bf6969a8f1'
+	'.github/workflows/foundation.yml' = '7a06a57c3a74b27e0549b4e0e534831824aa77109f009a630c2112ef24a787a7'
 	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {

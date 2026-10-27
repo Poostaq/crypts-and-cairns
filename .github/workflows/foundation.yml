@@ -24,6 +24,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Install Godot 4.7.2
         uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6
@@ -41,6 +44,13 @@ jobs:
       - name: Validate repository metadata
         shell: pwsh
         run: .\scripts\validate-github-readiness.ps1
+
+      - name: Validate publication history
+        shell: pwsh
+        run: >-
+          .\scripts\validate-publication.ps1
+          -ExpectedEmail '24713387+Poostaq@users.noreply.github.com'
+          -AllowDetachedHead
 
       - name: Run foundation tests
         shell: pwsh

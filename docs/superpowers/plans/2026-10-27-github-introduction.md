@@ -4,7 +4,7 @@
 
 **Goal:** Publish Crypts & Cairns to the owner's personal GitHub repository with rewritten noreply identities, a 'main' default branch, repository documentation, deterministic foundation CI, and protected-branch configuration.
 
-**Architecture:** Treat '<legacy-source>' as the immutable source and recovery checkout during publication. Create and verify a full Git bundle, then make a fresh non-local clone at '<canonical-checkout>'; rewrite identity metadata only in that clone, and make it the canonical GitHub-connected checkout. Add repository-facing documentation and CI there, validate locally, create an empty private GitHub repository, push once, verify its workflow, and only then apply the stored default-branch ruleset.
+**Architecture:** Treat `<legacy-source>` as the immutable source and recovery checkout during publication. Create and verify a full Git bundle, then make a fresh non-local clone at `<canonical-checkout>`; rewrite identity metadata only in that clone, and make it the canonical GitHub-connected checkout. Add repository-facing documentation and CI there, validate locally, create an empty private GitHub repository, push once, verify its workflow, and only then apply the stored default-branch ruleset.
 
 **Tech Stack:** Git, PowerShell 7, Python virtual environment with git-filter-repo 2.47.0, GitHub CLI, GitHub Actions, Godot 4.7.2 standard build and Web export templates.
 
@@ -37,7 +37,7 @@ Machine-specific locations are represented by placeholders such as
 without committing private workstation paths.
 
 Task 1 runs against the paths it names explicitly. After Task 1, run repository
-commands from '<canonical-checkout>' unless a step names another working
+commands from `<canonical-checkout>` unless a step names another working
 directory.
 
 ---
@@ -67,15 +67,15 @@ Files deliberately not created:
 
 External recovery and tool locations:
 
-- '<recovery-bundle>'
-- '<tool-environment>'
+- `<recovery-bundle>`
+- `<tool-environment>`
 
 ## Task 1: Preflight, Backup, and Fresh Canonical Clone
 
 **Files:**
-- Read: '<legacy-source>'
-- Create outside repository: '<recovery-bundle>'
-- Create checkout: '<canonical-checkout>'
+- Read: `<legacy-source>`
+- Create outside repository: `<recovery-bundle>`
+- Create checkout: `<canonical-checkout>`
 
 - [ ] **Step 1: Verify the source checkout is clean and still has no remote**
 
@@ -165,7 +165,7 @@ if (($cloneSubjects -join [Environment]::NewLine) -ne ($sourceSubjects -join [En
 }
 ~~~
 
-Expected: '<canonical-checkout>' exists as an independent clone with identical content and history.
+Expected: `<canonical-checkout>` exists as an independent clone with identical content and history.
 
 - [ ] **Step 5: Confirm the recovery boundary**
 
@@ -183,8 +183,8 @@ Expected: clean status and a temporary 'origin' pointing to the local source. Do
 ## Task 2: Authenticate and Rewrite Identity Metadata
 
 **Files:**
-- Modify history only in: '<canonical-checkout>'
-- Create tool environment: '<tool-environment>'
+- Modify history only in: `<canonical-checkout>`
+- Create tool environment: `<tool-environment>`
 
 - [ ] **Step 1: Install GitHub CLI only if it is absent**
 
@@ -258,7 +258,7 @@ Expected: git-filter-repo 2.47.0 is installed outside both repositories.
 
 - [ ] **Step 5: Rewrite only author and committer email fields**
 
-Run from '<canonical-checkout>':
+Run from `<canonical-checkout>`:
 
 ~~~powershell
 $destination = '<canonical-checkout>'
@@ -709,7 +709,7 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
-	'.github/workflows/foundation.yml' = 'bccd43c0c5a920a68211c4a40ec744eb595322435a9929a5c256c3bf6969a8f1'
+	'.github/workflows/foundation.yml' = '7a06a57c3a74b27e0549b4e0e534831824aa77109f009a630c2112ef24a787a7'
 	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
@@ -925,6 +925,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Install Godot 4.7.2
         uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6
@@ -942,6 +945,13 @@ jobs:
       - name: Validate repository metadata
         shell: pwsh
         run: .\scripts\validate-github-readiness.ps1
+
+      - name: Validate publication history
+        shell: pwsh
+        run: >-
+          .\scripts\validate-publication.ps1
+          -ExpectedEmail '24713387+Poostaq@users.noreply.github.com'
+          -AllowDetachedHead
 
       - name: Run foundation tests
         shell: pwsh
@@ -1077,7 +1087,7 @@ Run:
 	-RequireNoRemote
 ~~~
 
-Expected: all 19 isolated cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. Coverage includes GitHub token families, AWS access-key IDs and assigned secret keys, PEM private-key headers, text and binary blobs, commit messages, directly or indirectly reachable annotated tags, and a negative case for an unassigned AWS secret-key variable name. The validator also fails closed on Git command errors, dirty state, remotes, identity drift, and large blobs.
+Expected: all 22 isolated cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. Coverage includes GitHub token families, AWS access-key IDs and assigned secret keys, PEM private-key headers, text and binary blobs, commit messages, directly or indirectly reachable annotated tags, detached-HEAD opt-in and identity drift, and a negative case for an unassigned AWS secret-key variable name. The validator also fails closed on Git command errors, dirty state, remotes, identity drift, and large blobs.
 
 - [ ] **Step 4: Verify the final diff and recent history**
 
@@ -1195,7 +1205,7 @@ Expected: identical hashes, correct upstream, clean status.
 
 **Files:**
 - Read remote workflow: '.github/workflows/foundation.yml'
-- Download artifact outside repository: '<ci-artifact-directory>'
+- Download artifact outside repository: `<ci-artifact-directory>`
 
 - [ ] **Step 1: Wait for the push workflow to appear with bounded polling**
 
@@ -1463,9 +1473,9 @@ are enabled.
 ## Task 9: Final End-to-End Verification and Handoff
 
 **Files:**
-- Verify canonical checkout: '<canonical-checkout>'
-- Preserve legacy source: '<legacy-source>'
-- Preserve bundle: '<recovery-bundle>'
+- Verify canonical checkout: `<canonical-checkout>`
+- Preserve legacy source: `<legacy-source>`
+- Preserve bundle: `<recovery-bundle>`
 
 - [ ] **Step 1: Run a final local suite and export**
 
@@ -1520,7 +1530,7 @@ secret scanning, and push protection enabled.
 
 - [ ] **Step 3: Preserve recovery sources and identify the canonical checkout**
 
-Do not delete, move, reset, or add a GitHub remote to '<legacy-source>'. Report:
+Do not delete, move, reset, or add a GitHub remote to `<legacy-source>`. Report:
 
 ~~~text
 Canonical GitHub-connected checkout:

@@ -5,7 +5,8 @@ param(
 	[Parameter(Mandatory)]
 	[ValidateNotNullOrEmpty()]
 	[string]$ExpectedEmail,
-	[switch]$RequireNoRemote
+	[switch]$RequireNoRemote,
+	[switch]$AllowDetachedHead
 )
 
 Set-StrictMode -Version Latest
@@ -95,7 +96,8 @@ $branchResult = Invoke-GitCommand `
 	-Arguments @('branch', '--show-current')
 if ($branchResult.ExitCode -eq 0) {
 	$branch = ($branchResult.Output -join '').Trim()
-	if ($branch -cne 'main') {
+	if ($branch -cne 'main' -and
+		(-not $AllowDetachedHead -or -not [string]::IsNullOrWhiteSpace($branch))) {
 		$failures.Add("Current branch must be main; found '$branch'.")
 	}
 }

@@ -77,7 +77,8 @@ function Invoke-Validator {
 	param(
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
-		[switch]$RequireNoRemote
+		[switch]$RequireNoRemote,
+		[switch]$AllowDetachedHead
 	)
 
 	$arguments = @(
@@ -93,6 +94,9 @@ function Invoke-Validator {
 	if ($RequireNoRemote) {
 		$arguments += '-RequireNoRemote'
 	}
+	if ($AllowDetachedHead) {
+		$arguments += '-AllowDetachedHead'
+	}
 	$output = @(& (Join-Path $PSHOME 'pwsh.exe') @arguments 2>&1)
 	return [pscustomobject]@{
 		ExitCode = $LASTEXITCODE
@@ -106,10 +110,14 @@ function Assert-ValidatorPasses {
 		[string]$Name,
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
-		[switch]$RequireNoRemote
+		[switch]$RequireNoRemote,
+		[switch]$AllowDetachedHead
 	)
 
-	$result = Invoke-Validator -RepositoryRoot $RepositoryRoot -RequireNoRemote:$RequireNoRemote
+	$result = Invoke-Validator `
+		-RepositoryRoot $RepositoryRoot `
+		-RequireNoRemote:$RequireNoRemote `
+		-AllowDetachedHead:$AllowDetachedHead
 	if ($result.ExitCode -ne 0) {
 		throw "$Name should pass but exited $($result.ExitCode): $($result.Output -join [Environment]::NewLine)"
 	}
@@ -122,10 +130,14 @@ function Assert-ValidatorFails {
 		[string]$Name,
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
-		[switch]$RequireNoRemote
+		[switch]$RequireNoRemote,
+		[switch]$AllowDetachedHead
 	)
 
-	$result = Invoke-Validator -RepositoryRoot $RepositoryRoot -RequireNoRemote:$RequireNoRemote
+	$result = Invoke-Validator `
+		-RepositoryRoot $RepositoryRoot `
+		-RequireNoRemote:$RequireNoRemote `
+		-AllowDetachedHead:$AllowDetachedHead
 	if ($result.ExitCode -eq 0) {
 		throw "$Name should fail but passed: $($result.Output -join [Environment]::NewLine)"
 	}
@@ -137,6 +149,25 @@ try {
 
 	$baseline = New-TestRepository -Name 'baseline'
 	Assert-ValidatorPasses -Name 'baseline repository' -RepositoryRoot $baseline -RequireNoRemote
+
+	$detached = New-TestRepository -Name 'detached'
+	Invoke-Git -RepositoryRoot $detached checkout --detach HEAD
+	Assert-ValidatorFails -Name 'detached HEAD without explicit allowance' -RepositoryRoot $detached
+	Assert-ValidatorPasses `
+		-Name 'detached HEAD with explicit allowance' `
+		-RepositoryRoot $detached `
+		-AllowDetachedHead
+
+	$detachedIdentity = New-TestRepository -Name 'detached-identity'
+	Invoke-Git -RepositoryRoot $detachedIdentity checkout --detach HEAD
+	Invoke-Git -RepositoryRoot $detachedIdentity config user.email 'wrong@example.invalid'
+	Write-TestFile -Path (Join-Path $detachedIdentity 'detached.txt') -Content "detached`n"
+	Invoke-Git -RepositoryRoot $detachedIdentity add detached.txt
+	Invoke-Git -RepositoryRoot $detachedIdentity commit -m 'test: detached identity drift'
+	Assert-ValidatorFails `
+		-Name 'detached HEAD identity drift' `
+		-RepositoryRoot $detachedIdentity `
+		-AllowDetachedHead
 
 	$invalidRepository = Join-Path $tempRoot 'not-a-repository'
 	New-Item -ItemType Directory -Path $invalidRepository | Out-Null
@@ -254,7 +285,7 @@ try {
 	$wrongEmail = New-TestRepository -Name 'wrong-email' -Email 'wrong@example.invalid'
 	Assert-ValidatorFails -Name 'wrong author and committer email' -RepositoryRoot $wrongEmail
 
-	Write-Output 'Publication validator mutation tests passed: 19 cases.'
+	Write-Output 'Publication validator mutation tests passed: 22 cases.'
 	$global:LASTEXITCODE = 0
 } finally {
 	$resolvedTempRoot = [System.IO.Path]::GetFullPath($tempRoot)

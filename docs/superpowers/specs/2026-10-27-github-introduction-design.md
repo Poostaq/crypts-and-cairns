@@ -139,8 +139,11 @@ It will:
 - use read-only repository permissions;
 - cancel superseded runs for the same branch or pull request;
 - use a finite job timeout;
+- fetch complete history and validate the exact pull-request head or push SHA;
 - install exactly Godot 4.7.2 with Web export templates through a
   revision-pinned setup action;
+- require the approved GitHub `noreply` address for both author and committer
+  identities across the full reachable history;
 - run the existing PowerShell test script;
 - run the existing PowerShell Web-export script;
 - upload the resulting Web build as a short-retention workflow artifact;
