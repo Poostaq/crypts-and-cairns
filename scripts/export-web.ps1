@@ -3,6 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$godotProcessModule = Join-Path $PSScriptRoot 'GodotProcess.psm1'
 $projectRoot = [System.IO.Path]::GetFullPath(
 	(Split-Path -Parent $PSScriptRoot)
 )
@@ -15,7 +16,7 @@ $outputDirectory = [System.IO.Path]::GetFullPath(
 $outputFile = Join-Path $outputDirectory 'index.html'
 
 if ([string]::IsNullOrWhiteSpace($GodotBin)) {
-	throw 'Set GODOT_BIN to the absolute Godot 4.7.2 console executable path.'
+	throw 'Set GODOT_BIN to the absolute Godot 4.7.2 executable path.'
 }
 if (-not [System.IO.Path]::IsPathRooted($GodotBin)) {
 	throw "GODOT_BIN must be an absolute path: $GodotBin"
@@ -24,11 +25,16 @@ if (-not (Test-Path -LiteralPath $GodotBin -PathType Leaf)) {
 	throw "Godot executable not found: $GodotBin"
 }
 
-$versionOutput = @(& $GodotBin --version)
-if ($LASTEXITCODE -ne 0) {
+Import-Module -Name $godotProcessModule -Force
+
+$versionResult = Invoke-GodotProcess `
+	-GodotBin $GodotBin `
+	-ArgumentList @('--version') `
+	-TimeoutSeconds 30
+if ($versionResult.TimedOut -or $versionResult.ExitCode -ne 0) {
 	throw "Could not read the Godot version from: $GodotBin"
 }
-$version = ($versionOutput -join "`n").Trim()
+$version = $versionResult.StandardOutput.Trim()
 if (-not $version.StartsWith(
 	'4.7.2.stable',
 	[System.StringComparison]::Ordinal
@@ -58,14 +64,29 @@ if (Test-Path -LiteralPath $outputDirectory) {
 }
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 
-& $GodotBin `
-	--headless `
-	--path $projectRoot `
-	--export-debug 'Web' `
-	$outputFile
-$nativeExitCode = $LASTEXITCODE
-if ($nativeExitCode -ne 0) {
-	exit $nativeExitCode
+$exportResult = Invoke-GodotProcess `
+	-GodotBin $GodotBin `
+	-ArgumentList @(
+		'--headless',
+		'--path',
+		$projectRoot,
+		'--export-debug',
+		'Web',
+		$outputFile
+	) `
+	-TimeoutSeconds 600
+if (-not [string]::IsNullOrEmpty($exportResult.StandardOutput)) {
+	[Console]::Out.Write($exportResult.StandardOutput)
+}
+if (-not [string]::IsNullOrEmpty($exportResult.StandardError)) {
+	[Console]::Error.Write($exportResult.StandardError)
+}
+if ($exportResult.TimedOut) {
+	[Console]::Error.WriteLine('Web export timed out after 600 seconds.')
+	exit 124
+}
+if ($exportResult.ExitCode -ne 0) {
+	exit $exportResult.ExitCode
 }
 
 foreach ($requiredName in @(

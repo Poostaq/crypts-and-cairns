@@ -7,15 +7,25 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$godotProcessModule = Join-Path $PSScriptRoot 'GodotProcess.psm1'
 
 if ([string]::IsNullOrWhiteSpace($GodotBin)) {
-	throw 'Set GODOT_BIN to the absolute Godot 4.7.2 console executable path.'
+	throw 'Set GODOT_BIN to the absolute Godot 4.7.2 executable path.'
 }
 if (-not (Test-Path -LiteralPath $GodotBin -PathType Leaf)) {
 	throw "Godot executable not found: $GodotBin"
 }
 
-$version = (& $GodotBin --version).Trim()
+Import-Module -Name $godotProcessModule -Force
+
+$versionResult = Invoke-GodotProcess `
+	-GodotBin $GodotBin `
+	-ArgumentList @('--version') `
+	-TimeoutSeconds 30
+if ($versionResult.TimedOut -or $versionResult.ExitCode -ne 0) {
+	throw "Could not read the Godot version from: $GodotBin"
+}
+$version = $versionResult.StandardOutput.Trim()
 if (-not $version.StartsWith('4.7.2.stable')) {
 	throw "Expected Godot 4.7.2-stable, received: $version"
 }
@@ -23,47 +33,18 @@ if ($version.Contains('mono')) {
 	throw "Use the standard Godot build, not the .NET/Mono build: $version"
 }
 
-$standardOutput = ''
-$standardError = ''
-$nativeExitCode = 0
-$timedOut = $false
-
-$startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-$startInfo.FileName = $GodotBin
-$startInfo.UseShellExecute = $false
-$startInfo.CreateNoWindow = $true
-$startInfo.RedirectStandardOutput = $true
-$startInfo.RedirectStandardError = $true
-# Quote paths containing spaces. Doubling trailing backslashes prevents them
-# from escaping the closing quote in the Windows native command line.
-$escapedProjectRoot = $projectRoot -replace '(\\+)$', '$1$1'
-$startInfo.Arguments = (
-	'--headless --path "{0}" --script res://tests/test_runner.gd' -f
-	$escapedProjectRoot
-)
-
-$process = [System.Diagnostics.Process]::new()
-$process.StartInfo = $startInfo
-
-try {
-	if (-not $process.Start()) {
-		throw 'Failed to start the Godot test process.'
-	}
-	$standardOutputTask = $process.StandardOutput.ReadToEndAsync()
-	$standardErrorTask = $process.StandardError.ReadToEndAsync()
-
-	if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-		$timedOut = $true
-		$process.Kill()
-		$process.WaitForExit()
-	}
-
-	$nativeExitCode = $process.ExitCode
-	$standardOutput = $standardOutputTask.GetAwaiter().GetResult()
-	$standardError = $standardErrorTask.GetAwaiter().GetResult()
-} finally {
-	$process.Dispose()
-}
+$result = Invoke-GodotProcess `
+	-GodotBin $GodotBin `
+	-ArgumentList @(
+		'--headless',
+		'--path',
+		$projectRoot,
+		'--script',
+		'res://tests/test_runner.gd'
+	) `
+	-TimeoutSeconds $TimeoutSeconds
+$standardOutput = $result.StandardOutput
+$standardError = $result.StandardError
 
 if (-not [string]::IsNullOrEmpty($standardOutput)) {
 	[Console]::Out.Write($standardOutput)
@@ -72,14 +53,14 @@ if (-not [string]::IsNullOrEmpty($standardError)) {
 	[Console]::Error.Write($standardError)
 }
 
-if ($timedOut) {
+if ($result.TimedOut) {
 	[Console]::Error.WriteLine(
 		"Test runner timed out after {0} seconds." -f $TimeoutSeconds
 	)
 	exit 124
 }
-if ($nativeExitCode -ne 0) {
-	exit $nativeExitCode
+if ($result.ExitCode -ne 0) {
+	exit $result.ExitCode
 }
 if (($standardOutput + $standardError) -match 'SCRIPT ERROR:') {
 	[Console]::Error.WriteLine('Godot reported a script error.')
