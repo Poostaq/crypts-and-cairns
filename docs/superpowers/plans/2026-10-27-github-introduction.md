@@ -28,6 +28,10 @@ Files created in the new canonical checkout:
 - '.github/workflows/foundation.yml' — pinned, least-privilege test and Web-export workflow.
 - '.github/rulesets/main.json' — reproducible branch ruleset payload applied after the first successful workflow run.
 - 'scripts/validate-github-readiness.ps1' — local and CI validation for repository metadata and non-deployment constraints.
+- 'scripts/validate-publication.ps1' — fail-closed local publication audit for Git state, history, secrets, object sizes, and identities.
+- 'scripts/verify-web-pck.ps1' — strict Godot 4.7.2 PCK v4 parser and authoritative-content integrity check.
+- 'tests/scripts/publication_validator_test.ps1' — isolated temporary-repository mutation coverage for publication failures.
+- 'tests/scripts/web_pck_verifier_test.ps1' — safe exported-pack mutation coverage for structural and content failures.
 
 Files deliberately not created:
 
@@ -630,6 +634,10 @@ $requiredFiles = @(
 	'.github/pull_request_template.md',
 	'.github/workflows/foundation.yml',
 	'.github/rulesets/main.json',
+	'scripts/validate-publication.ps1',
+	'scripts/verify-web-pck.ps1',
+	'tests/scripts/publication_validator_test.ps1',
+	'tests/scripts/web_pck_verifier_test.ps1',
 	'docs/superpowers/specs/2026-10-25-crypts-and-cairns-design.md',
 	'docs/design/naming-registry.md',
 	'docs/design/source-provenance.md',
@@ -771,7 +779,7 @@ Run:
 .\scripts\validate-github-readiness.ps1
 ~~~
 
-Expected: FAIL listing '.github/workflows/foundation.yml' and '.github/rulesets/main.json' as missing. Do not weaken the validator.
+Expected: FAIL listing '.github/workflows/foundation.yml', '.github/rulesets/main.json', both publication scripts, and both script-level mutation tests as missing. Do not weaken the validator.
 
 - [ ] **Step 3: Create the pinned foundation workflow**
 
@@ -912,6 +920,9 @@ Expected: one commit authored with the GitHub noreply identity.
 **Files:**
 - Verify: entire canonical checkout
 - Generate ignored output: 'build/web/' and '.godot/'
+- Execute: 'scripts/validate-publication.ps1'
+- Execute: 'tests/scripts/publication_validator_test.ps1'
+- Execute through export: 'scripts/verify-web-pck.ps1' and 'tests/scripts/web_pck_verifier_test.ps1'
 
 - [ ] **Step 1: Validate metadata and run all foundation tests**
 
@@ -933,75 +944,31 @@ Run:
 .\scripts\export-web.ps1 -GodotBin $godot
 ~~~
 
-Expected: successful export to 'build/web/index.html', including all four authoritative content JSON files in the pack log.
+Expected: successful export to 'build/web/index.html'; the production PCK verifier validates format 4, Godot 4.7.2, every entry MD5, forbidden roots, and byte-for-byte equality for all four authoritative content JSON files. Its six-case mutation suite also passes.
 
-- [ ] **Step 3: Scan current content and all history for obvious secrets**
+- [ ] **Step 3: Exercise and run the fail-closed publication validator**
 
 Run:
 
 ~~~powershell
-$pattern = 'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|password[[:space:]]*[:=]|secret[[:space:]]*[:=]|api[_-]?key[[:space:]]*[:=]'
-$currentHits = @(git grep -I -l -E $pattern HEAD 2>$null)
-$historyHits = [System.Collections.Generic.List[string]]::new()
-foreach ($commit in @(git rev-list --all)) {
-	foreach ($hit in @(git grep -I -l -E $pattern $commit 2>$null)) {
-		$historyHits.Add($hit)
-	}
-}
-if ($currentHits.Count -gt 0 -or $historyHits.Count -gt 0) {
-	throw ('Potential secret-pattern files found. Current: ' + ($currentHits -join ', ') + '; history: ' + ($historyHits -join ', '))
-}
+.\tests\scripts\publication_validator_test.ps1
+.\scripts\validate-publication.ps1 `
+	-ExpectedEmail '24713387+Poostaq@users.noreply.github.com' `
+	-RequireNoRemote
 ~~~
 
-Expected: no hits. This is a publication gate, not proof that no secret exists.
+Expected: all ten isolated mutation cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. The validator fails closed on Git command errors, dirty state, remotes, identity drift, large blobs, secrets in text or binary blobs, commit messages, and directly or indirectly reachable annotated tags.
 
-- [ ] **Step 4: Reject tracked blobs at or above GitHub's 50 MiB warning threshold**
-
-Run:
-
-~~~powershell
-$limit = 50MB
-$oversized = [System.Collections.Generic.List[string]]::new()
-foreach ($line in @(git rev-list --objects --all)) {
-	$parts = $line -split ' ', 2
-	if ($parts.Count -ne 2) {
-		continue
-	}
-	$size = [int64](git cat-file -s $parts[0])
-	if ($size -ge $limit) {
-		$oversized.Add("$size bytes $($parts[1])")
-	}
-}
-if ($oversized.Count -gt 0) {
-	throw ('Tracked blobs reach 50 MiB:' + [Environment]::NewLine + ($oversized -join [Environment]::NewLine))
-}
-~~~
-
-Expected: no oversized blobs.
-
-- [ ] **Step 5: Verify final local state**
+- [ ] **Step 4: Verify the final diff and recent history**
 
 Run:
 
 ~~~powershell
-$account = gh api user | ConvertFrom-Json
-$owner = [string]$account.login
-$noreply = "$($account.id)+$owner@users.noreply.github.com"
-$emails = @(git log --all --format='%ae%n%ce' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
-if ($emails.Count -ne 1 -or $emails[0] -ne $noreply) {
-	throw "Unexpected commit identities: $($emails -join ', ')"
-}
-if ((git branch --show-current) -ne 'main') {
-	throw 'Canonical checkout is not on main.'
-}
-if (@(git remote).Count -ne 0) {
-	throw 'A remote was added before all local publication gates passed.'
-}
-git status --short
+git diff --check
 git log --oneline -5
 ~~~
 
-Expected: 'main', no remote, one noreply email, and clean status.
+Expected: no whitespace errors and the expected recent commits. Branch, remote, status, fsck, history, object-size, secret, and identity checks already passed atomically in Step 3.
 
 ## Task 6: Create the Empty Private Repository and Push Once
 
