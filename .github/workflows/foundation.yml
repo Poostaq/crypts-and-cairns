@@ -32,6 +32,12 @@ jobs:
           use-dotnet: false
           include-templates: true
 
+      - name: Test Godot process launcher
+        shell: pwsh
+        run: |
+          $godot = (Get-Command godot -ErrorAction Stop).Source
+          .\tests\scripts\godot_process_test.ps1 -GodotBin $godot
+
       - name: Validate repository metadata
         shell: pwsh
         run: .\scripts\validate-github-readiness.ps1

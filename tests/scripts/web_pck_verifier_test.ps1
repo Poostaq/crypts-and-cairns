@@ -1,17 +1,22 @@
 param(
-	[string]$PckPath = (
-		Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'build/web/index.pck'
-	),
-	[string]$ProjectRoot = (
-		Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-	),
-	[string]$VerifierPath = (
-		Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'scripts/verify-web-pck.ps1'
-	)
+	[string]$PckPath,
+	[string]$ProjectRoot,
+	[string]$VerifierPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+$repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+	$ProjectRoot = $repositoryRoot
+}
+if ([string]::IsNullOrWhiteSpace($PckPath)) {
+	$PckPath = Join-Path $repositoryRoot 'build/web/index.pck'
+}
+if ([string]::IsNullOrWhiteSpace($VerifierPath)) {
+	$VerifierPath = Join-Path $repositoryRoot 'scripts/verify-web-pck.ps1'
+}
 
 $tempParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd(
 	[System.IO.Path]::DirectorySeparatorChar,

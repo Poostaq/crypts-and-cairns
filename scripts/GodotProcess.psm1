@@ -1,3 +1,7 @@
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+	throw 'Godot process launcher requires PowerShell 7 or later. Run this command with pwsh.'
+}
+
 Set-StrictMode -Version Latest
 
 function Invoke-GodotProcess {
@@ -30,9 +34,31 @@ function Invoke-GodotProcess {
 		$standardOutputTask = $process.StandardOutput.ReadToEndAsync()
 		$standardErrorTask = $process.StandardError.ReadToEndAsync()
 
-		if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+		if (
+			-not $process.WaitForExit($TimeoutSeconds * 1000) -and
+			-not $process.WaitForExit(0)
+		) {
 			$timedOut = $true
-			$process.Kill()
+			try {
+				$process.Kill($true)
+			} catch {
+				$treeKillError = $_.Exception
+				try {
+					if (-not $process.HasExited) {
+						$process.Kill()
+						$process.WaitForExit()
+					}
+				} catch {
+					throw [System.InvalidOperationException]::new(
+						'Godot process timed out; process-tree and direct-process termination both failed.',
+						$_.Exception
+					)
+				}
+				throw [System.InvalidOperationException]::new(
+					'Godot process timed out; direct process terminated, but process-tree termination failed and descendant state is unknown.',
+					$treeKillError
+				)
+			}
 			$process.WaitForExit()
 		}
 

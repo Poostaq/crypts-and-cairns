@@ -19,9 +19,13 @@ Do not push feature work directly to `main`.
 
 ## Required verification
 
+Run verification commands with PowerShell 7 or later (`pwsh`). Windows
+PowerShell 5.1 is not supported.
+
 ```powershell
 .\scripts\validate-github-readiness.ps1
 $godot = (Get-Command godot -ErrorAction Stop).Source
+.\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot
 .\scripts\export-web.ps1 -GodotBin $godot
 ```

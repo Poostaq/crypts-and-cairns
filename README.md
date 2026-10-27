@@ -21,10 +21,12 @@ Open `project.godot` in the standard Godot 4.7.2 editor and run the main scene.
 
 ## Test
 
-From PowerShell, with Godot 4.7.2 available on `PATH`:
+From PowerShell 7 or later (`pwsh`), with Godot 4.7.2 available on `PATH`.
+Windows PowerShell 5.1 is not supported.
 
 ```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
+.\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot
 ```
 
