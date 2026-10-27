@@ -17,13 +17,24 @@ authorized changing `Poostaq/crypts-and-cairns` to public visibility so the
 approved `main` protections can be applied.
 
 This amendment overrides private-visibility instructions and expectations in
-the original execution steps. It does not add or approve a license, GitHub
-Pages deployment, or release. Public access grants no permission to copy,
-redistribute, publish, or create derivative works from the repository's code,
-content, or assets.
+the original execution steps. It does not add or approve an open-source
+license, an additional reuse grant, a GitHub Pages deployment, or a release.
+Public availability carries only the limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features.
+
+A post-publication hardening follow-up enables private vulnerability reporting,
+secret scanning, and secret-scanning push protection. It also sets
+`require_extra_approval_for_unattributed_changes` to `false` in both the stored
+and live `Protect main` ruleset.
 
 Each command block is self-contained. Re-resolve authenticated account values
 instead of assuming PowerShell variables survive between steps.
+
+Machine-specific locations are represented by placeholders such as
+`<legacy-source>`, `<canonical-checkout>`, `<recovery-bundle>`,
+`<tool-environment>`, and `<ci-artifact-directory>`. Resolve them locally
+without committing private workstation paths.
 
 Task 1 runs against the paths it names explicitly. After Task 1, run repository
 commands from '<canonical-checkout>' unless a step names another working
@@ -255,7 +266,7 @@ $source = '<legacy-source>'
 $account = gh api user | ConvertFrom-Json
 $owner = [string]$account.login
 $noreply = "$($account.id)+$owner@users.noreply.github.com"
-$filterRepo = '<filter-repo-executable>'
+$filterRepo = Join-Path '<tool-environment>' 'Scripts\git-filter-repo.exe'
 $sourceTree = git -C $source rev-parse 'master^{tree}'
 $sourceCommitCount = [int](git -C $source rev-list --count master)
 $sourceSubjects = @(git -C $source log --reverse --format='%s' master)
@@ -412,9 +423,12 @@ that affects a world element must be recorded in the provenance ledger.
 
 ## License status
 
-This repository is publicly visible but is not licensed for redistribution.
-Public access grants no permission to copy, redistribute, publish, or create
-derivative works from its code, content, or assets.
+This repository has no open-source license and grants no additional reuse
+rights. Public availability carries only the limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features. Beyond those
+platform rights, no permission is granted to copy, redistribute, publish, or
+create derivative works from the code, content, or assets.
 ````
 
 - [ ] **Step 2: Create contribution guidance**
@@ -424,10 +438,13 @@ Create 'CONTRIBUTING.md' with exactly:
 ````markdown
 # Contributing to Crypts & Cairns
 
-Crypts & Cairns is publicly visible, but public visibility is not an
-open-source license. Coordinate contributions with the repository owner and
-submit them through pull requests for review. All contributions must preserve
-the approved design and deterministic foundation.
+Crypts & Cairns has no open-source license or additional reuse grant. Public
+availability carries only the limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features. Coordinate
+contributions with the repository owner and submit them through pull requests
+for review. All contributions must preserve the approved design and
+deterministic foundation.
 
 ## Workflow
 
@@ -499,9 +516,9 @@ Security fixes apply to the current `main` branch.
 ## Reporting
 
 Do not disclose a suspected vulnerability in ordinary issue or pull-request
-discussion. Contact the repository owner through an existing private channel,
-or use GitHub's private vulnerability reporting or security advisory flow when
-it is available for this repository.
+discussion. On GitHub, open **Security**, select **Advisories**, and choose
+**Report a vulnerability** to start a private report. If that flow is
+unavailable, contact the repository owner through an existing private channel.
 
 Include the affected revision, reproduction steps, expected and observed
 behavior, impact, and any suggested mitigation. Do not include real
@@ -693,7 +710,7 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
 	'.github/workflows/foundation.yml' = 'bccd43c0c5a920a68211c4a40ec744eb595322435a9929a5c256c3bf6969a8f1'
-	'.github/rulesets/main.json' = 'a1495c817a1c8d7ffcd76e8a3e8161177c913cb514ab4e9e79d7cf24ceefac4f'
+	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
 	$absolutePath = Join-Path $RepositoryRoot $entry.Key
@@ -745,6 +762,18 @@ if (Test-Path -LiteralPath $rulesetPath -PathType Leaf) {
 		})
 		if (($actualRuleTypes -join "`n") -cne ($expectedRuleTypes -join "`n")) {
 			$failures.Add('Ruleset rule types do not match the approved protections.')
+		}
+
+		$pullRequestRules = @($rules | Where-Object {
+			(Get-JsonPropertyValue -InputObject $_ -Name 'type') -ceq 'pull_request'
+		})
+		if ($pullRequestRules.Count -ne 1) {
+			$failures.Add('Ruleset must contain exactly one pull_request rule.')
+		} else {
+			$pullRequestParameters = Get-JsonPropertyValue -InputObject $pullRequestRules[0] -Name 'parameters'
+			if ((Get-JsonPropertyValue -InputObject $pullRequestParameters -Name 'require_extra_approval_for_unattributed_changes') -ne $false) {
+				$failures.Add('Ruleset pull requests must not require extra approval for unattributed changes.')
+			}
 		}
 
 		$statusRules = @($rules | Where-Object {
@@ -807,6 +836,44 @@ if (Test-Path -LiteralPath $contributingPath -PathType Leaf) {
 		if (-not $contributing.Contains($fragment)) {
 			$failures.Add("CONTRIBUTING is missing required PowerShell requirement: $fragment")
 		}
+	}
+}
+
+$termsUrl = 'https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users'
+foreach ($relativePath in @(
+	'README.md',
+	'CONTRIBUTING.md',
+	'docs/superpowers/specs/2026-10-27-github-introduction-design.md',
+	'docs/superpowers/plans/2026-10-27-github-introduction.md'
+)) {
+	$absolutePath = Join-Path $RepositoryRoot $relativePath
+	if (Test-Path -LiteralPath $absolutePath -PathType Leaf) {
+		$content = Get-Content -LiteralPath $absolutePath -Raw
+		if (-not $content.Contains('no open-source license') -or -not $content.Contains($termsUrl)) {
+			$failures.Add("Public license guidance is incomplete: $relativePath")
+		}
+	}
+}
+
+$securityPath = Join-Path $RepositoryRoot 'SECURITY.md'
+if (Test-Path -LiteralPath $securityPath -PathType Leaf) {
+	$security = Get-Content -LiteralPath $securityPath -Raw
+	foreach ($fragment in @('Security', 'Advisories', 'Report a vulnerability')) {
+		if (-not $security.Contains($fragment)) {
+			$failures.Add("SECURITY is missing private-reporting navigation: $fragment")
+		}
+	}
+}
+
+$publicMarkdown = @(
+	Get-ChildItem -LiteralPath $RepositoryRoot -File -Filter '*.md'
+	Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'docs') -Recurse -File -Filter '*.md'
+)
+foreach ($file in $publicMarkdown) {
+	$content = Get-Content -LiteralPath $file.FullName -Raw
+	if ($content -match '[A-Za-z]:\\') {
+		$relativePath = [System.IO.Path]::GetRelativePath($RepositoryRoot, $file.FullName)
+		$failures.Add("Public Markdown contains a machine-specific absolute path: $relativePath")
 	}
 }
 
@@ -924,6 +991,7 @@ Create '.github/rulesets/main.json' with exactly:
         "allowed_merge_methods": ["squash", "rebase"],
         "dismiss_stale_reviews_on_push": false,
         "require_code_owner_review": false,
+        "require_extra_approval_for_unattributed_changes": false,
         "require_last_push_approval": false,
         "required_approving_review_count": 0,
         "required_review_thread_resolution": true
@@ -981,7 +1049,7 @@ Expected: one commit authored with the GitHub noreply identity.
 Run:
 
 ~~~powershell
-$godot = '<godot-executable>'
+$godot = (Get-Command godot -ErrorAction Stop).Source
 .\scripts\validate-github-readiness.ps1
 .\scripts\test.ps1 -GodotBin $godot
 ~~~
@@ -1340,7 +1408,8 @@ if (($ruleTypes -join "`n") -cne ($expectedRuleTypes -join "`n")) {
 $pullRequestRules = @($ruleset.rules | Where-Object type -eq 'pull_request')
 if ($pullRequestRules.Count -ne 1 -or
 	[int]$pullRequestRules[0].parameters.required_approving_review_count -ne 0 -or
-	-not [bool]$pullRequestRules[0].parameters.required_review_thread_resolution) {
+	-not [bool]$pullRequestRules[0].parameters.required_review_thread_resolution -or
+	[bool]$pullRequestRules[0].parameters.require_extra_approval_for_unattributed_changes) {
 	throw 'Protect main must require pull requests with zero approvals and resolved conversations.'
 }
 $statusRules = @($ruleset.rules | Where-Object type -eq 'required_status_checks')
@@ -1361,8 +1430,35 @@ if (-not $statusRule.parameters.strict_required_status_checks_policy) {
 
 Expected: exactly one active branch ruleset targeting only the default branch,
 with deletion and non-fast-forward blocks, linear history, pull requests with
-zero approvals and conversation resolution, and the strict `Verify foundation`
-check bound to GitHub Actions integration 15368.
+zero approvals, conversation resolution, and no extra approval for unattributed
+changes, plus the strict `Verify foundation` check bound to GitHub Actions
+integration 15368.
+
+- [ ] **Step 6: Enable repository security reporting and secret protection**
+
+Run:
+
+~~~powershell
+$owner = 'Poostaq'
+$repoName = 'crypts-and-cairns'
+gh api --method PUT "repos/$owner/$repoName/private-vulnerability-reporting"
+gh api --method PATCH "repos/$owner/$repoName" `
+	-F 'security_and_analysis[secret_scanning][status]=enabled' `
+	-F 'security_and_analysis[secret_scanning_push_protection][status]=enabled' | Out-Null
+if ($LASTEXITCODE -ne 0) {
+	throw 'Could not enable repository security settings.'
+}
+$reporting = gh api "repos/$owner/$repoName/private-vulnerability-reporting" | ConvertFrom-Json
+$remote = gh api "repos/$owner/$repoName" | ConvertFrom-Json
+if (-not [bool]$reporting.enabled -or
+	$remote.security_and_analysis.secret_scanning.status -cne 'enabled' -or
+	$remote.security_and_analysis.secret_scanning_push_protection.status -cne 'enabled') {
+	throw 'Repository security settings are not fully enabled.'
+}
+~~~
+
+Expected: private vulnerability reporting, secret scanning, and push protection
+are enabled.
 
 ## Task 9: Final End-to-End Verification and Handoff
 
@@ -1376,7 +1472,7 @@ check bound to GitHub Actions integration 15368.
 Run:
 
 ~~~powershell
-$godot = '<godot-executable>'
+$godot = (Get-Command godot -ErrorAction Stop).Source
 .\scripts\validate-github-readiness.ps1
 .\scripts\test.ps1 -GodotBin $godot
 .\scripts\export-web.ps1 -GodotBin $godot
@@ -1407,13 +1503,20 @@ if ([bool]$remote.private -or $remote.visibility -cne 'public' -or
 	[bool]$remote.has_pages -or $null -ne $remote.license) {
 	throw 'Remote visibility, default branch, or publication boundaries are incorrect.'
 }
+$reporting = gh api "repos/$owner/$repoName/private-vulnerability-reporting" | ConvertFrom-Json
+if (-not [bool]$reporting.enabled -or
+	$remote.security_and_analysis.secret_scanning.status -cne 'enabled' -or
+	$remote.security_and_analysis.secret_scanning_push_protection.status -cne 'enabled') {
+	throw 'Repository security settings are not fully enabled.'
+}
 if (@(git status --short).Count -ne 0) {
 	throw 'Canonical checkout is not clean.'
 }
 ~~~
 
 Expected: clean `main`, exact upstream match, public remote, correct default
-branch, wiki and Pages disabled, and no license.
+branch, wiki and Pages disabled, no license, private vulnerability reporting,
+secret scanning, and push protection enabled.
 
 - [ ] **Step 3: Preserve recovery sources and identify the canonical checkout**
 
