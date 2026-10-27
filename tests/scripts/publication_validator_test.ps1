@@ -157,6 +157,65 @@ try {
 	Invoke-Git -RepositoryRoot $binaryFixtureRepo commit -m 'test: binary fixture'
 	Assert-ValidatorFails -Name 'binary blob secret' -RepositoryRoot $binaryFixtureRepo
 
+	foreach ($tokenSuffix in @('o', 'u', 's', 'r')) {
+		$tokenFixture = 'gh' + $tokenSuffix + '_' + ('A' * 20)
+		if ($tokenSuffix -ceq 's') {
+			$tokenFixtureRepo = New-TestRepository `
+				-Name "github-token-$tokenSuffix" `
+				-Message ('test: ' + $tokenFixture)
+		} else {
+			$tokenFixtureRepo = New-TestRepository -Name "github-token-$tokenSuffix"
+			if ($tokenSuffix -ceq 'r') {
+				Invoke-Git -RepositoryRoot $tokenFixtureRepo -Arguments @(
+					'tag', '-a', "github-token-$tokenSuffix", '-m', $tokenFixture
+				)
+			} else {
+				Write-TestFile -Path (Join-Path $tokenFixtureRepo 'token.txt') -Content ($tokenFixture + "`n")
+				Invoke-Git -RepositoryRoot $tokenFixtureRepo add token.txt
+				Invoke-Git -RepositoryRoot $tokenFixtureRepo commit -m "test: GitHub token $tokenSuffix fixture"
+			}
+		}
+		Assert-ValidatorFails -Name "GitHub gh${tokenSuffix}_ token" -RepositoryRoot $tokenFixtureRepo
+	}
+
+	$temporaryCredentialRepo = New-TestRepository -Name 'temporary-aws-id'
+	$temporaryCredentialFixture = 'AS' + 'IA' + ('A' * 16)
+	Write-TestFile -Path (Join-Path $temporaryCredentialRepo 'aws-id.txt') -Content ($temporaryCredentialFixture + "`n")
+	Invoke-Git -RepositoryRoot $temporaryCredentialRepo add aws-id.txt
+	Invoke-Git -RepositoryRoot $temporaryCredentialRepo commit -m 'test: temporary AWS ID fixture'
+	Assert-ValidatorFails -Name 'ASIA access key ID' -RepositoryRoot $temporaryCredentialRepo
+
+	foreach ($pemVariant in @('', 'ENCRYPTED ')) {
+		$pemFixture = '-----BEGIN ' + $pemVariant + 'PRIVATE KEY-----'
+		if ($pemVariant.Length -eq 0) {
+			$pemFixtureRepo = New-TestRepository -Name 'pem-generic'
+			Write-TestFile -Path (Join-Path $pemFixtureRepo 'key.pem') -Content ($pemFixture + "`n")
+			Invoke-Git -RepositoryRoot $pemFixtureRepo add key.pem
+			Invoke-Git -RepositoryRoot $pemFixtureRepo commit -m 'test: PEM fixture'
+		} else {
+			$pemFixtureRepo = New-TestRepository -Name 'pem-encrypted' -Message ('test: ' + $pemFixture)
+		}
+		Assert-ValidatorFails `
+			-Name $(if ($pemVariant.Length -eq 0) { 'generic private key PEM header' } else { 'encrypted private key PEM header' }) `
+			-RepositoryRoot $pemFixtureRepo
+	}
+
+	$assignedAwsCredentialRepo = New-TestRepository -Name 'assigned-aws-secret'
+	$awsAssignmentFixture = 'aws_' + 'secret_access_key = ' + ('A' * 20)
+	Invoke-Git -RepositoryRoot $assignedAwsCredentialRepo -Arguments @(
+		'tag', '-a', 'assigned-aws-credential', '-m', $awsAssignmentFixture
+	)
+	Assert-ValidatorFails -Name 'AWS secret access key assignment' -RepositoryRoot $assignedAwsCredentialRepo
+
+	$awsNameOnlyFixture = 'AWS_' + 'SECRET_ACCESS_KEY'
+	$unassignedAwsNameRepo = New-TestRepository `
+		-Name 'unassigned-aws-name' `
+		-Message ('test: ' + $awsNameOnlyFixture)
+	Write-TestFile -Path (Join-Path $unassignedAwsNameRepo 'environment.txt') -Content ($awsNameOnlyFixture + "`n")
+	Invoke-Git -RepositoryRoot $unassignedAwsNameRepo add environment.txt
+	Invoke-Git -RepositoryRoot $unassignedAwsNameRepo commit -m 'test: unassigned AWS name fixture'
+	Assert-ValidatorPasses -Name 'AWS secret access key name without value' -RepositoryRoot $unassignedAwsNameRepo
+
 	$messageSecretFixture = 'test: SEC' + 'RET = placeholder'
 	$messageFixtureRepo = New-TestRepository -Name 'message-secret' -Message $messageSecretFixture
 	Assert-ValidatorFails -Name 'commit message secret' -RepositoryRoot $messageFixtureRepo
@@ -192,7 +251,7 @@ try {
 	$wrongEmail = New-TestRepository -Name 'wrong-email' -Email 'wrong@example.invalid'
 	Assert-ValidatorFails -Name 'wrong author and committer email' -RepositoryRoot $wrongEmail
 
-	Write-Output 'Publication validator mutation tests passed: 10 cases.'
+	Write-Output 'Publication validator mutation tests passed: 19 cases.'
 	$global:LASTEXITCODE = 0
 } finally {
 	$resolvedTempRoot = [System.IO.Path]::GetFullPath($tempRoot)
