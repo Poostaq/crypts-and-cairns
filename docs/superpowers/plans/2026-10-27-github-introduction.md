@@ -538,8 +538,18 @@ foreach ($path in $required) {
 		throw "Missing documentation path: $path"
 	}
 }
-if (Get-ChildItem -File -Name 'LICENSE*' -ErrorAction SilentlyContinue) {
-	throw 'A license file was added outside the approved scope.'
+# GitHub Licensee treats these conventional root names as license candidates.
+$licenseCandidatePattern = '^(?:LICENSE|LICENCE|COPYING|COPYRIGHT|UNLICENSE)(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?(?:\.(?:txt|md|markdown|html|rst))?$'
+$licenseFiles = @(
+	Get-ChildItem -LiteralPath . -File |
+		Where-Object { $_.Name -imatch $licenseCandidatePattern }
+)
+$licenseDirectories = @(
+	Get-ChildItem -LiteralPath . -Directory |
+		Where-Object { $_.Name -ieq 'LICENSES' }
+)
+if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
+	throw 'A conventional license file or LICENSES directory was added outside the approved scope.'
 }
 git diff --check
 ~~~
@@ -633,13 +643,18 @@ foreach ($relativePath in $requiredFiles) {
 	}
 }
 
-$licenseNames = @('LICENSE', 'LICENSE.md', 'LICENSE.txt', 'LICENSE.rst')
+# GitHub Licensee treats these conventional root names as license candidates.
+$licenseCandidatePattern = '^(?:LICENSE|LICENCE|COPYING|COPYRIGHT|UNLICENSE)(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?(?:\.(?:txt|md|markdown|html|rst))?$'
 $licenseFiles = @(
 	Get-ChildItem -LiteralPath $RepositoryRoot -File |
-		Where-Object { $licenseNames -icontains $_.Name }
+		Where-Object { $_.Name -imatch $licenseCandidatePattern }
 )
-if ($licenseFiles.Count -gt 0) {
-	$failures.Add('A license file exists before licensing has been approved.')
+$licenseDirectories = @(
+	Get-ChildItem -LiteralPath $RepositoryRoot -Directory |
+		Where-Object { $_.Name -ieq 'LICENSES' }
+)
+if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
+	$failures.Add('A conventional license file or LICENSES directory exists before licensing has been approved.')
 }
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
