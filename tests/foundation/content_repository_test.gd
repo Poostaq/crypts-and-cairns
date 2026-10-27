@@ -188,6 +188,13 @@ func run() -> void:
 		"duplicate localization key class.fighter.name",
 		"duplicate localization keys fail"
 	)
+	_assert_failure_contains(
+		JsonContentRepository.load_catalog(
+			"res://tests/fixtures/content_repository/duplicate_keys_localization_manifest.json"
+		),
+		"duplicate object key",
+		"duplicate localization keys inside one JSON file fail"
+	)
 
 
 func _definition_ids(definitions: Array) -> Array[String]:
