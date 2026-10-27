@@ -2,9 +2,8 @@ param(
 	[string]$RepositoryRoot = (
 		Split-Path -Parent $PSScriptRoot
 	),
-	[Parameter(Mandatory)]
-	[ValidateNotNullOrEmpty()]
 	[string]$ExpectedEmail,
+	[string]$ApprovedAuthorEmailsPath,
 	[switch]$RequireNoRemote,
 	[switch]$AllowDetachedHead
 )
@@ -13,6 +12,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $failures = [System.Collections.Generic.List[string]]::new()
+$githubCommitterEmail = 'noreply@github.com'
+$emailPattern = '^[A-Za-z0-9.!#$%&''*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$'
 $secretLocations = [System.Collections.Generic.HashSet[string]]::new(
 	[System.StringComparer]::Ordinal
 )
@@ -64,10 +65,6 @@ function Throw-PublicationFailures {
 	}
 }
 
-if ([string]::IsNullOrWhiteSpace($ExpectedEmail)) {
-	$failures.Add('ExpectedEmail must not be empty.')
-}
-
 try {
 	$RepositoryRoot = [System.IO.Path]::GetFullPath($RepositoryRoot)
 } catch {
@@ -78,6 +75,72 @@ try {
 if (-not (Test-Path -LiteralPath $RepositoryRoot -PathType Container)) {
 	$failures.Add("RepositoryRoot does not exist: $RepositoryRoot")
 	Throw-PublicationFailures
+}
+
+$approvedAuthorEmails = [System.Collections.Generic.HashSet[string]]::new(
+	[System.StringComparer]::Ordinal
+)
+if ($PSBoundParameters.ContainsKey('ExpectedEmail')) {
+	if ($PSBoundParameters.ContainsKey('ApprovedAuthorEmailsPath')) {
+		$failures.Add('ExpectedEmail and ApprovedAuthorEmailsPath cannot be used together.')
+	}
+	if ([string]::IsNullOrWhiteSpace($ExpectedEmail) -or
+		$ExpectedEmail.Length -gt 254 -or $ExpectedEmail -cnotmatch $emailPattern) {
+		$failures.Add('ExpectedEmail is not a valid email address.')
+	} else {
+		$null = $approvedAuthorEmails.Add($ExpectedEmail)
+	}
+} else {
+	if ([string]::IsNullOrWhiteSpace($ApprovedAuthorEmailsPath)) {
+		$ApprovedAuthorEmailsPath = Join-Path `
+			$RepositoryRoot `
+			'.github/approved-author-emails.txt'
+	} elseif (-not [System.IO.Path]::IsPathRooted($ApprovedAuthorEmailsPath)) {
+		$ApprovedAuthorEmailsPath = Join-Path $RepositoryRoot $ApprovedAuthorEmailsPath
+	}
+	try {
+		$ApprovedAuthorEmailsPath = [System.IO.Path]::GetFullPath(
+			$ApprovedAuthorEmailsPath
+		)
+	} catch {
+		$failures.Add('ApprovedAuthorEmailsPath is not a valid filesystem path.')
+	}
+	if (-not [string]::IsNullOrWhiteSpace($ApprovedAuthorEmailsPath) -and
+		(Test-Path -LiteralPath $ApprovedAuthorEmailsPath -PathType Leaf)) {
+		$allowlistContent = [System.IO.File]::ReadAllText($ApprovedAuthorEmailsPath)
+		$allowlistLines = @($allowlistContent -split '\r\n|\n|\r')
+		if ($allowlistLines.Count -gt 0 -and $allowlistLines[-1] -ceq '') {
+			if ($allowlistLines.Count -eq 1) {
+				$allowlistLines = @()
+			} else {
+				$allowlistLines = @(
+					$allowlistLines[0..($allowlistLines.Count - 2)]
+				)
+			}
+		}
+		foreach ($line in $allowlistLines) {
+			if ([string]::IsNullOrWhiteSpace($line) -or $line -cne $line.Trim()) {
+				$failures.Add('Approved author email entries must be non-empty and have no surrounding whitespace.')
+				continue
+			}
+			if ($line.Length -gt 254 -or $line -cnotmatch $emailPattern) {
+				$failures.Add('Approved author email file contains an invalid address.')
+				continue
+			}
+			if ($line -ceq $githubCommitterEmail) {
+				$failures.Add("GitHub's generated committer address cannot be approved as an author.")
+				continue
+			}
+			if (-not $approvedAuthorEmails.Add($line)) {
+				$failures.Add('Approved author email file contains a duplicate address.')
+			}
+		}
+	} else {
+		$failures.Add("Approved author email file does not exist: $ApprovedAuthorEmailsPath")
+	}
+}
+if ($approvedAuthorEmails.Count -eq 0) {
+	$failures.Add('At least one approved author email is required.')
 }
 
 $topLevelResult = Invoke-GitCommand `
@@ -241,8 +304,12 @@ foreach ($commit in $commits) {
 		$failures.Add("Commit identity record is invalid: $commit")
 		continue
 	}
-	if ($identities[0] -cne $ExpectedEmail -or $identities[1] -cne $ExpectedEmail) {
-		$failures.Add("Commit has an unexpected author or committer email: $commit")
+	if (-not $approvedAuthorEmails.Contains($identities[0])) {
+		$failures.Add("Commit has an unapproved author email: $commit")
+	}
+	if (-not $approvedAuthorEmails.Contains($identities[1]) -and
+		$identities[1] -cne $githubCommitterEmail) {
+		$failures.Add("Commit has an unexpected committer email: $commit")
 	}
 }
 

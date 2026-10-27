@@ -49,7 +49,6 @@ jobs:
         shell: pwsh
         run: >-
           .\scripts\validate-publication.ps1
-          -ExpectedEmail '24713387+Poostaq@users.noreply.github.com'
           -AllowDetachedHead
 
       - name: Run foundation tests

@@ -10,14 +10,21 @@ deterministic foundation.
 
 ## Workflow
 
-1. Branch from the current `main`.
-2. Keep one coherent change per branch.
-3. Add or update tests before changing deterministic or validation behavior.
-4. Run the complete test suite.
-5. Run the Web export for changes that can affect startup, content packaging, or
+1. Before the first commit, coordinate the exact GitHub-provided `noreply`
+   author address with the owner. It must be owner-approved in
+   `.github/approved-author-emails.txt`; do not add an address without that
+   review.
+2. Configure Git to author every commit with the approved address. GitHub's
+   generated `noreply@github.com` address is accepted only as the committer of
+   GitHub-created commits such as squash merges.
+3. Branch from the current `main`.
+4. Keep one coherent change per branch.
+5. Add or update tests before changing deterministic or validation behavior.
+6. Run the complete test suite and publication validator.
+7. Run the Web export for changes that can affect startup, content packaging, or
    presentation.
-6. Open a pull request and complete every applicable checklist item.
-7. Merge only after required checks pass and review conversations are resolved.
+8. Open a pull request and complete every applicable checklist item.
+9. Merge only after required checks pass and review conversations are resolved.
 
 Do not push feature work directly to `main`.
 
@@ -28,6 +35,7 @@ PowerShell 5.1 is not supported.
 
 ```powershell
 .\scripts\validate-github-readiness.ps1
+.\scripts\validate-publication.ps1
 $godot = (Get-Command godot -ErrorAction Stop).Source
 .\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot

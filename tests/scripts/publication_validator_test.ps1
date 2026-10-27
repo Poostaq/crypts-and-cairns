@@ -11,6 +11,8 @@ if ([string]::IsNullOrWhiteSpace($ValidatorPath)) {
 }
 
 $expectedEmail = '24713387+Poostaq@users.noreply.github.com'
+$githubCommitterEmail = 'noreply@github.com'
+$secondApprovedEmail = '12345678+ApprovedContributor@users.noreply.github.com'
 $tempParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd(
 	[System.IO.Path]::DirectorySeparatorChar,
 	[System.IO.Path]::AltDirectorySeparatorChar
@@ -52,7 +54,8 @@ function New-TestRepository {
 		[Parameter(Mandatory)]
 		[string]$Name,
 		[string]$Email = $expectedEmail,
-		[string]$Message = 'test: baseline'
+		[string]$Message = 'test: baseline',
+		[string[]]$ApprovedAuthorEmails = @($expectedEmail)
 	)
 
 	$root = Join-Path $tempRoot $Name
@@ -67,10 +70,49 @@ function New-TestRepository {
 	Invoke-Git -RepositoryRoot $root config tag.gpgSign false
 	Invoke-Git -RepositoryRoot $root config advice.nestedTag false
 	Invoke-Git -RepositoryRoot $root config core.autocrlf false
+	$githubDirectory = Join-Path $root '.github'
+	New-Item -ItemType Directory -Path $githubDirectory | Out-Null
+	Write-TestFile `
+		-Path (Join-Path $githubDirectory 'approved-author-emails.txt') `
+		-Content (($ApprovedAuthorEmails -join "`n") + "`n")
 	Write-TestFile -Path (Join-Path $root 'README.md') -Content "fixture`n"
-	Invoke-Git -RepositoryRoot $root add README.md
+	Invoke-Git -RepositoryRoot $root add .github/approved-author-emails.txt README.md
 	Invoke-Git -RepositoryRoot $root commit -m $Message
 	return $root
+}
+
+function Add-TestCommit {
+	param(
+		[Parameter(Mandatory)]
+		[string]$RepositoryRoot,
+		[Parameter(Mandatory)]
+		[string]$Name,
+		[Parameter(Mandatory)]
+		[string]$AuthorEmail,
+		[Parameter(Mandatory)]
+		[string]$CommitterEmail
+	)
+
+	$previousAuthorName = $env:GIT_AUTHOR_NAME
+	$previousAuthorEmail = $env:GIT_AUTHOR_EMAIL
+	$previousCommitterName = $env:GIT_COMMITTER_NAME
+	$previousCommitterEmail = $env:GIT_COMMITTER_EMAIL
+	try {
+		$env:GIT_AUTHOR_NAME = 'Publication Test'
+		$env:GIT_AUTHOR_EMAIL = $AuthorEmail
+		$env:GIT_COMMITTER_NAME = 'Publication Test'
+		$env:GIT_COMMITTER_EMAIL = $CommitterEmail
+		Write-TestFile `
+			-Path (Join-Path $RepositoryRoot "$Name.txt") `
+			-Content "$Name`n"
+		Invoke-Git -RepositoryRoot $RepositoryRoot add "$Name.txt"
+		Invoke-Git -RepositoryRoot $RepositoryRoot commit -m "test: $Name"
+	} finally {
+		$env:GIT_AUTHOR_NAME = $previousAuthorName
+		$env:GIT_AUTHOR_EMAIL = $previousAuthorEmail
+		$env:GIT_COMMITTER_NAME = $previousCommitterName
+		$env:GIT_COMMITTER_EMAIL = $previousCommitterEmail
+	}
 }
 
 function Invoke-Validator {
@@ -78,7 +120,8 @@ function Invoke-Validator {
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
 		[switch]$RequireNoRemote,
-		[switch]$AllowDetachedHead
+		[switch]$AllowDetachedHead,
+		[switch]$UseExpectedEmailCompatibility
 	)
 
 	$arguments = @(
@@ -87,10 +130,11 @@ function Invoke-Validator {
 		'-File',
 		$ValidatorPath,
 		'-RepositoryRoot',
-		$RepositoryRoot,
-		'-ExpectedEmail',
-		$expectedEmail
+		$RepositoryRoot
 	)
+	if ($UseExpectedEmailCompatibility) {
+		$arguments += @('-ExpectedEmail', $expectedEmail)
+	}
 	if ($RequireNoRemote) {
 		$arguments += '-RequireNoRemote'
 	}
@@ -111,13 +155,15 @@ function Assert-ValidatorPasses {
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
 		[switch]$RequireNoRemote,
-		[switch]$AllowDetachedHead
+		[switch]$AllowDetachedHead,
+		[switch]$UseExpectedEmailCompatibility
 	)
 
 	$result = Invoke-Validator `
 		-RepositoryRoot $RepositoryRoot `
 		-RequireNoRemote:$RequireNoRemote `
-		-AllowDetachedHead:$AllowDetachedHead
+		-AllowDetachedHead:$AllowDetachedHead `
+		-UseExpectedEmailCompatibility:$UseExpectedEmailCompatibility
 	if ($result.ExitCode -ne 0) {
 		throw "$Name should pass but exited $($result.ExitCode): $($result.Output -join [Environment]::NewLine)"
 	}
@@ -131,13 +177,15 @@ function Assert-ValidatorFails {
 		[Parameter(Mandatory)]
 		[string]$RepositoryRoot,
 		[switch]$RequireNoRemote,
-		[switch]$AllowDetachedHead
+		[switch]$AllowDetachedHead,
+		[switch]$UseExpectedEmailCompatibility
 	)
 
 	$result = Invoke-Validator `
 		-RepositoryRoot $RepositoryRoot `
 		-RequireNoRemote:$RequireNoRemote `
-		-AllowDetachedHead:$AllowDetachedHead
+		-AllowDetachedHead:$AllowDetachedHead `
+		-UseExpectedEmailCompatibility:$UseExpectedEmailCompatibility
 	if ($result.ExitCode -eq 0) {
 		throw "$Name should fail but passed: $($result.Output -join [Environment]::NewLine)"
 	}
@@ -149,6 +197,54 @@ try {
 
 	$baseline = New-TestRepository -Name 'baseline'
 	Assert-ValidatorPasses -Name 'baseline repository' -RepositoryRoot $baseline -RequireNoRemote
+
+	$expectedEmailCompatibility = New-TestRepository -Name 'expected-email-compatibility'
+	Assert-ValidatorPasses `
+		-Name 'ExpectedEmail compatibility mode' `
+		-RepositoryRoot $expectedEmailCompatibility `
+		-UseExpectedEmailCompatibility
+
+	$githubCommitter = New-TestRepository -Name 'github-committer'
+	Add-TestCommit `
+		-RepositoryRoot $githubCommitter `
+		-Name 'github-committer' `
+		-AuthorEmail $expectedEmail `
+		-CommitterEmail $githubCommitterEmail
+	Assert-ValidatorPasses `
+		-Name 'approved author with GitHub-generated committer' `
+		-RepositoryRoot $githubCommitter
+
+	$multipleAuthors = New-TestRepository `
+		-Name 'multiple-approved-authors' `
+		-ApprovedAuthorEmails @($expectedEmail, $secondApprovedEmail)
+	Add-TestCommit `
+		-RepositoryRoot $multipleAuthors `
+		-Name 'second-approved-author' `
+		-AuthorEmail $secondApprovedEmail `
+		-CommitterEmail $githubCommitterEmail
+	Assert-ValidatorPasses `
+		-Name 'multiple approved author emails' `
+		-RepositoryRoot $multipleAuthors
+
+	$rejectedAuthor = New-TestRepository -Name 'rejected-author'
+	Add-TestCommit `
+		-RepositoryRoot $rejectedAuthor `
+		-Name 'rejected-author' `
+		-AuthorEmail '87654321+UnapprovedAuthor@users.noreply.github.com' `
+		-CommitterEmail $githubCommitterEmail
+	Assert-ValidatorFails `
+		-Name 'unapproved author email' `
+		-RepositoryRoot $rejectedAuthor
+
+	$rejectedCommitter = New-TestRepository -Name 'rejected-committer'
+	Add-TestCommit `
+		-RepositoryRoot $rejectedCommitter `
+		-Name 'rejected-committer' `
+		-AuthorEmail $expectedEmail `
+		-CommitterEmail '87654321+UnapprovedCommitter@users.noreply.github.com'
+	Assert-ValidatorFails `
+		-Name 'unapproved committer email' `
+		-RepositoryRoot $rejectedCommitter
 
 	$detached = New-TestRepository -Name 'detached'
 	Invoke-Git -RepositoryRoot $detached checkout --detach HEAD
@@ -285,7 +381,7 @@ try {
 	$wrongEmail = New-TestRepository -Name 'wrong-email' -Email 'wrong@example.invalid'
 	Assert-ValidatorFails -Name 'wrong author and committer email' -RepositoryRoot $wrongEmail
 
-	Write-Output 'Publication validator mutation tests passed: 22 cases.'
+	Write-Output 'Publication validator mutation tests passed: 27 cases.'
 	$global:LASTEXITCODE = 0
 } finally {
 	$resolvedTempRoot = [System.IO.Path]::GetFullPath($tempRoot)

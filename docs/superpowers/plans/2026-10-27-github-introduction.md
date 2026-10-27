@@ -28,6 +28,22 @@ secret scanning, and secret-scanning push protection. It also sets
 `require_extra_approval_for_unattributed_changes` to `false` in both the stored
 and live `Protect main` ruleset.
 
+A squash-merge verification later confirmed that GitHub uses the approved pull
+request author's address but writes `noreply@github.com` as the committer.
+Publication validation now reads the owner-reviewed author addresses from
+`.github/approved-author-emails.txt`. Authors must be listed; committers may be
+listed or use GitHub's generated committer address. The initial allowlist
+contains only the owner's ID-based GitHub `noreply` address, and contributor
+addresses require explicit owner review.
+
+Because the authorized repair already replaces public history, the repair also
+uses bounded exact replacements to remove machine-specific drive paths from
+all reachable historical blobs. It preserves topology, commit messages,
+authors, timestamps, and the existing final-tip tree before the new policy
+commit is added. This supersedes the earlier metadata-only limitation for the
+pending repair, but does not broaden the rewrite beyond the enumerated path
+strings.
+
 Each command block is self-contained. Re-resolve authenticated account values
 instead of assuming PowerShell variables survive between steps.
 
@@ -50,6 +66,7 @@ Files created in the new canonical checkout:
 - 'CONTRIBUTING.md' — branch, verification, determinism, data, naming, and provenance requirements.
 - 'SECURITY.md' — private vulnerability reporting and secret-handling policy.
 - '.github/pull_request_template.md' — review checklist for foundation and content changes.
+- '.github/approved-author-emails.txt' — owner-reviewed public commit-author allowlist.
 - '.github/workflows/foundation.yml' — pinned, least-privilege test and Web-export workflow.
 - '.github/rulesets/main.json' — reproducible branch ruleset payload applied after the first successful workflow run.
 - 'scripts/validate-github-readiness.ps1' — local and CI validation for repository metadata and non-deployment constraints.
@@ -421,6 +438,14 @@ are intentionally ignored by Git.
 World terminology must follow the naming registry. New evidence or inspiration
 that affects a world element must be recorded in the provenance ledger.
 
+## Commit identity policy
+
+Every commit author must use an owner-approved address listed in
+`.github/approved-author-emails.txt`. GitHub's generated
+`noreply@github.com` address is also accepted for the committer field on
+GitHub-created squash commits. See [CONTRIBUTING.md](CONTRIBUTING.md) before
+preparing a pull request or changing the allowlist.
+
 ## License status
 
 This repository has no open-source license and grants no additional reuse
@@ -448,14 +473,21 @@ deterministic foundation.
 
 ## Workflow
 
-1. Branch from the current `main`.
-2. Keep one coherent change per branch.
-3. Add or update tests before changing deterministic or validation behavior.
-4. Run the complete test suite.
-5. Run the Web export for changes that can affect startup, content packaging, or
+1. Before the first commit, coordinate the exact GitHub-provided `noreply`
+   author address with the owner. It must be owner-approved in
+   `.github/approved-author-emails.txt`; do not add an address without that
+   review.
+2. Configure Git to author every commit with the approved address. GitHub's
+   generated `noreply@github.com` address is accepted only as the committer of
+   GitHub-created commits such as squash merges.
+3. Branch from the current `main`.
+4. Keep one coherent change per branch.
+5. Add or update tests before changing deterministic or validation behavior.
+6. Run the complete test suite and publication validator.
+7. Run the Web export for changes that can affect startup, content packaging, or
    presentation.
-6. Open a pull request and complete every applicable checklist item.
-7. Merge only after required checks pass and review conversations are resolved.
+8. Open a pull request and complete every applicable checklist item.
+9. Merge only after required checks pass and review conversations are resolved.
 
 Do not push feature work directly to `main`.
 
@@ -466,6 +498,7 @@ PowerShell 5.1 is not supported.
 
 ```powershell
 .\scripts\validate-github-readiness.ps1
+.\scripts\validate-publication.ps1
 $godot = (Get-Command godot -ErrorAction Stop).Source
 .\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot
@@ -672,6 +705,7 @@ $requiredFiles = @(
 	'CONTRIBUTING.md',
 	'SECURITY.md',
 	'.github/pull_request_template.md',
+	'.github/approved-author-emails.txt',
 	'.github/workflows/foundation.yml',
 	'.github/rulesets/main.json',
 	'scripts/GodotProcess.psm1',
@@ -709,7 +743,8 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
-	'.github/workflows/foundation.yml' = '7a06a57c3a74b27e0549b4e0e534831824aa77109f009a630c2112ef24a787a7'
+	'.github/approved-author-emails.txt' = '5cf3782dbd69e0d0a63a0bac9933c5a9fd11488964ab07cdc45f58e2a9375b09'
+	'.github/workflows/foundation.yml' = '34ef2a9423b2f0b08265a50a723d6090ea5eadba51cfadf92ce0e36ee4f944b3'
 	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
@@ -718,6 +753,47 @@ foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
 		$actualHash = Get-NormalizedSha256 -Path $absolutePath
 		if ($actualHash -cne $entry.Value) {
 			$failures.Add("Reviewed policy content changed: $($entry.Key)")
+		}
+	}
+}
+
+$approvedAuthorEmailsPath = Join-Path `
+	$RepositoryRoot `
+	'.github/approved-author-emails.txt'
+if (Test-Path -LiteralPath $approvedAuthorEmailsPath -PathType Leaf) {
+	$approvedAuthorContent = [System.IO.File]::ReadAllText(
+		$approvedAuthorEmailsPath
+	).Replace("`r`n", "`n").Replace("`r", "`n")
+	if (-not $approvedAuthorContent.EndsWith("`n", [System.StringComparison]::Ordinal)) {
+		$failures.Add('Approved author email file must end with one newline.')
+	} else {
+		$approvedAuthorLines = @(
+			$approvedAuthorContent.Substring(
+				0,
+				$approvedAuthorContent.Length - 1
+			).Split("`n", [System.StringSplitOptions]::None)
+		)
+		$approvedAuthorPattern = '^(?:[0-9]+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$'
+		$approvedAuthorSet = [System.Collections.Generic.HashSet[string]]::new(
+			[System.StringComparer]::Ordinal
+		)
+		for ($index = 0; $index -lt $approvedAuthorLines.Count; $index++) {
+			$email = $approvedAuthorLines[$index]
+			if ([string]::IsNullOrWhiteSpace($email) -or
+				$email -cne $email.Trim() -or
+				$email.Length -gt 254 -or
+				$email -cnotmatch $approvedAuthorPattern) {
+				$failures.Add("Approved author email entry $($index + 1) must be a GitHub-provided noreply address without surrounding whitespace.")
+				continue
+			}
+			if (-not $approvedAuthorSet.Add($email)) {
+				$failures.Add("Approved author email entry $($index + 1) is duplicated.")
+			}
+		}
+		if (-not $approvedAuthorSet.Contains(
+			'24713387+Poostaq@users.noreply.github.com'
+		)) {
+			$failures.Add("Approved author email file must retain the owner's GitHub noreply address.")
 		}
 	}
 }
@@ -892,9 +968,19 @@ Run:
 .\scripts\validate-github-readiness.ps1
 ~~~
 
-Expected: FAIL listing '.github/workflows/foundation.yml', '.github/rulesets/main.json', both publication scripts, and both script-level mutation tests as missing. Do not weaken the validator.
+Expected: FAIL listing '.github/approved-author-emails.txt', '.github/workflows/foundation.yml', '.github/rulesets/main.json', both publication scripts, and both script-level mutation tests as missing. Do not weaken the validator.
 
-- [ ] **Step 3: Create the pinned foundation workflow**
+- [ ] **Step 3: Create the approved-author allowlist and pinned foundation workflow**
+
+Create '.github/approved-author-emails.txt' with exactly:
+
+~~~text
+24713387+Poostaq@users.noreply.github.com
+~~~
+
+The owner reviews any future addition to this file. Store only the exact
+GitHub-provided `noreply` address that the contributor will use as the author
+of every commit.
 
 Create '.github/workflows/foundation.yml' with exactly:
 
@@ -950,7 +1036,6 @@ jobs:
         shell: pwsh
         run: >-
           .\scripts\validate-publication.ps1
-          -ExpectedEmail '24713387+Poostaq@users.noreply.github.com'
           -AllowDetachedHead
 
       - name: Run foundation tests
@@ -1039,7 +1124,7 @@ Expected: 'GitHub readiness validation passed.' and no whitespace errors.
 Run:
 
 ~~~powershell
-git add scripts/validate-github-readiness.ps1 .github/workflows/foundation.yml .github/rulesets/main.json
+git add scripts/validate-github-readiness.ps1 .github/approved-author-emails.txt .github/workflows/foundation.yml .github/rulesets/main.json
 git commit -m 'ci: verify foundation and Web export'
 ~~~
 
@@ -1083,11 +1168,10 @@ Run:
 ~~~powershell
 .\tests\scripts\publication_validator_test.ps1
 .\scripts\validate-publication.ps1 `
-	-ExpectedEmail '24713387+Poostaq@users.noreply.github.com' `
 	-RequireNoRemote
 ~~~
 
-Expected: all 22 isolated cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. Coverage includes GitHub token families, AWS access-key IDs and assigned secret keys, PEM private-key headers, text and binary blobs, commit messages, directly or indirectly reachable annotated tags, detached-HEAD opt-in and identity drift, and a negative case for an unassigned AWS secret-key variable name. The validator also fails closed on Git command errors, dirty state, remotes, identity drift, and large blobs.
+Expected: all 27 isolated cases pass, followed by a publication summary covering every reachable commit and named blob with zero secret-pattern hits. Coverage includes the approved-author allowlist, the explicit `ExpectedEmail` compatibility mode, GitHub-generated squash committers, multiple approved authors, rejected authors and committers, GitHub token families, AWS access-key IDs and assigned secret keys, PEM private-key headers, text and binary blobs, commit messages, directly or indirectly reachable annotated tags, detached-HEAD opt-in and identity drift, and a negative case for an unassigned AWS secret-key variable name. The validator also fails closed on Git command errors, dirty state, remotes, identity drift, and large blobs.
 
 - [ ] **Step 4: Verify the final diff and recent history**
 

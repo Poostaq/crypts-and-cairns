@@ -63,6 +63,14 @@ are intentionally ignored by Git.
 World terminology must follow the naming registry. New evidence or inspiration
 that affects a world element must be recorded in the provenance ledger.
 
+## Commit identity policy
+
+Every commit author must use an owner-approved address listed in
+`.github/approved-author-emails.txt`. GitHub's generated
+`noreply@github.com` address is also accepted for the committer field on
+GitHub-created squash commits. See [CONTRIBUTING.md](CONTRIBUTING.md) before
+preparing a pull request or changing the allowlist.
+
 ## License status
 
 This repository has no open-source license and grants no additional reuse

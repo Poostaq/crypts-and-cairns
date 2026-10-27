@@ -34,6 +34,15 @@ current history, protect author-email privacy, establish a useful private
 development baseline, and avoid prematurely making licensing or public-release
 decisions.
 
+A later squash-merge verification established that GitHub preserves the
+approved pull-request author address but writes `noreply@github.com` as the
+committer of a GitHub-created squash commit. Publication validation therefore
+uses `.github/approved-author-emails.txt` as the owner-reviewed author
+allowlist, accepts any listed address for locally created committers, and also
+accepts `noreply@github.com` for the committer field only. The allowlist starts
+with the owner's ID-based GitHub `noreply` address. Contributor addresses must
+be coordinated with and approved by the owner through review.
+
 The GitHub repository slug will be `crypts-and-cairns`. Its default branch will
 be `main`.
 
@@ -46,6 +55,7 @@ This introduction includes:
   authenticated GitHub `noreply` identity;
 - renaming the local default branch from `master` to `main`;
 - essential repository documentation and contribution guidance;
+- an owner-reviewed allowlist for public-safe commit author addresses;
 - continuous integration for the deterministic foundation tests and Godot Web
   export;
 - creation of an empty private GitHub repository and the first push;
@@ -103,6 +113,9 @@ It must not promise that the project is legally risk-free.
 
 Contribution guidance will require:
 
+- owner approval of each exact GitHub `noreply` author address before use;
+- full-history validation against the committed author allowlist, while
+  accepting GitHub's generated committer address for squash merges;
 - work on a focused feature branch rather than directly on `main`;
 - tests for deterministic domain and content behavior;
 - a successful full suite and Web export before review;
@@ -142,8 +155,10 @@ It will:
 - fetch complete history and validate the exact pull-request head or push SHA;
 - install exactly Godot 4.7.2 with Web export templates through a
   revision-pinned setup action;
-- require the approved GitHub `noreply` address for both author and committer
-  identities across the full reachable history;
+- require every author identity across the full reachable history to appear in
+  the owner-reviewed allowlist;
+- allow committers from that allowlist or GitHub's generated
+  `noreply@github.com` squash-merge identity;
 - run the existing PowerShell test script;
 - run the existing PowerShell Web-export script;
 - upload the resulting Web build as a short-retention workflow artifact;
@@ -198,7 +213,8 @@ Publication stops before the first push if any of these checks fail:
 
 - the working tree is not clean;
 - the backup bundle cannot be verified;
-- the rewritten history contains an unintended email identity;
+- a reachable commit has an author outside the owner-approved allowlist or a
+  committer outside that allowlist and GitHub's generated committer address;
 - the full Godot test suite fails;
 - the Web export fails;
 - a credential/private-key pattern is found in the current tree or history;
@@ -216,8 +232,8 @@ history again.
 The introduction is complete when:
 
 - local development uses `main`;
-- history contains only the intended GitHub `noreply` email identity or
-  identities explicitly approved by the owner;
+- every history author uses an owner-approved GitHub `noreply` identity, and
+  each committer is either owner-approved or `noreply@github.com`;
 - `origin` points to the public personal repository named
   `crypts-and-cairns`;
 - local `main` tracks `origin/main`;

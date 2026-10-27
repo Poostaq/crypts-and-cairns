@@ -46,6 +46,7 @@ $requiredFiles = @(
 	'CONTRIBUTING.md',
 	'SECURITY.md',
 	'.github/pull_request_template.md',
+	'.github/approved-author-emails.txt',
 	'.github/workflows/foundation.yml',
 	'.github/rulesets/main.json',
 	'scripts/GodotProcess.psm1',
@@ -83,7 +84,8 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
-	'.github/workflows/foundation.yml' = '7a06a57c3a74b27e0549b4e0e534831824aa77109f009a630c2112ef24a787a7'
+	'.github/approved-author-emails.txt' = '5cf3782dbd69e0d0a63a0bac9933c5a9fd11488964ab07cdc45f58e2a9375b09'
+	'.github/workflows/foundation.yml' = '34ef2a9423b2f0b08265a50a723d6090ea5eadba51cfadf92ce0e36ee4f944b3'
 	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
@@ -92,6 +94,47 @@ foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
 		$actualHash = Get-NormalizedSha256 -Path $absolutePath
 		if ($actualHash -cne $entry.Value) {
 			$failures.Add("Reviewed policy content changed: $($entry.Key)")
+		}
+	}
+}
+
+$approvedAuthorEmailsPath = Join-Path `
+	$RepositoryRoot `
+	'.github/approved-author-emails.txt'
+if (Test-Path -LiteralPath $approvedAuthorEmailsPath -PathType Leaf) {
+	$approvedAuthorContent = [System.IO.File]::ReadAllText(
+		$approvedAuthorEmailsPath
+	).Replace("`r`n", "`n").Replace("`r", "`n")
+	if (-not $approvedAuthorContent.EndsWith("`n", [System.StringComparison]::Ordinal)) {
+		$failures.Add('Approved author email file must end with one newline.')
+	} else {
+		$approvedAuthorLines = @(
+			$approvedAuthorContent.Substring(
+				0,
+				$approvedAuthorContent.Length - 1
+			).Split("`n", [System.StringSplitOptions]::None)
+		)
+		$approvedAuthorPattern = '^(?:[0-9]+\+)?[A-Za-z0-9-]+@users\.noreply\.github\.com$'
+		$approvedAuthorSet = [System.Collections.Generic.HashSet[string]]::new(
+			[System.StringComparer]::Ordinal
+		)
+		for ($index = 0; $index -lt $approvedAuthorLines.Count; $index++) {
+			$email = $approvedAuthorLines[$index]
+			if ([string]::IsNullOrWhiteSpace($email) -or
+				$email -cne $email.Trim() -or
+				$email.Length -gt 254 -or
+				$email -cnotmatch $approvedAuthorPattern) {
+				$failures.Add("Approved author email entry $($index + 1) must be a GitHub-provided noreply address without surrounding whitespace.")
+				continue
+			}
+			if (-not $approvedAuthorSet.Add($email)) {
+				$failures.Add("Approved author email entry $($index + 1) is duplicated.")
+			}
+		}
+		if (-not $approvedAuthorSet.Contains(
+			'24713387+Poostaq@users.noreply.github.com'
+		)) {
+			$failures.Add("Approved author email file must retain the owner's GitHub noreply address.")
 		}
 	}
 }
