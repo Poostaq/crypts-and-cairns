@@ -3,7 +3,7 @@
 Crypts & Cairns is a deterministic, turn-based simulation of living in a
 game-like world built around expeditions into a lethal labyrinth.
 
-> This is a private foundation-stage project. The current build validates the
+> This is a foundation-stage project. The current build validates the
 > deterministic state, command, replay, random-stream, and data-loading layers;
 > it is not yet a playable game slice.
 
@@ -65,6 +65,6 @@ that affects a world element must be recorded in the provenance ledger.
 
 ## License status
 
-This private repository is not yet licensed for redistribution. No permission
-to copy, redistribute, publish, or create derivative works from its code,
-content, or assets is granted by its presence on GitHub.
+This repository is publicly visible but is not licensed for redistribution.
+Public access grants no permission to copy, redistribute, publish, or create
+derivative works from its code, content, or assets.

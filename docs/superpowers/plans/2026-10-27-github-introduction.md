@@ -1,12 +1,26 @@
-# Private GitHub Introduction Implementation Plan
+# GitHub Introduction Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox ('- [ ]') syntax for tracking.
 
-**Goal:** Publish Crypts & Cairns to a new private personal GitHub repository with rewritten noreply identities, a 'main' default branch, repository documentation, deterministic foundation CI, and protected-branch configuration when the owner's GitHub plan supports it.
+**Goal:** Publish Crypts & Cairns to the owner's personal GitHub repository with rewritten noreply identities, a 'main' default branch, repository documentation, deterministic foundation CI, and protected-branch configuration.
 
 **Architecture:** Treat 'D:\Projects\DungeonAndStone' as the immutable source and recovery checkout during publication. Create and verify a full Git bundle, then make a fresh non-local clone at 'D:\Projects\CryptsAndCairns'; rewrite identity metadata only in that clone, and make it the canonical GitHub-connected checkout. Add repository-facing documentation and CI there, validate locally, create an empty private GitHub repository, push once, verify its workflow, and only then apply the stored default-branch ruleset.
 
 **Tech Stack:** Git, PowerShell 7, Python virtual environment with git-filter-repo 2.47.0, GitHub CLI, GitHub Actions, Godot 4.7.2 standard build and Web export templates.
+
+## Execution Amendment: Public Visibility
+
+Private visibility was selected and used for the initial publication. During
+Task 8, the current GitHub Free account was found not to support rulesets or
+protected branches for a private personal repository. The owner explicitly
+authorized changing `Poostaq/crypts-and-cairns` to public visibility so the
+approved `main` protections can be applied.
+
+This amendment overrides private-visibility instructions and expectations in
+the original execution steps. It does not add or approve a license, GitHub
+Pages deployment, or release. Public access grants no permission to copy,
+redistribute, publish, or create derivative works from the repository's code,
+content, or assets.
 
 Each command block is self-contained. Re-resolve authenticated account values
 instead of assuming PowerShell variables survive between steps.
@@ -318,7 +332,7 @@ git -C $destination status --short
 
 Expected: identical tip tree, commit count, and subject ordering; exactly one author/committer email; no remote; clean status; successful 'git fsck'.
 
-## Task 3: Add Private Repository Documentation
+## Task 3: Add Public Repository Documentation
 
 **Files:**
 - Create: 'README.md'
@@ -336,7 +350,7 @@ Create 'README.md' with exactly:
 Crypts & Cairns is a deterministic, turn-based simulation of living in a
 game-like world built around expeditions into a lethal labyrinth.
 
-> This is a private foundation-stage project. The current build validates the
+> This is a foundation-stage project. The current build validates the
 > deterministic state, command, replay, random-stream, and data-loading layers;
 > it is not yet a playable game slice.
 
@@ -398,9 +412,9 @@ that affects a world element must be recorded in the provenance ledger.
 
 ## License status
 
-This private repository is not yet licensed for redistribution. No permission
-to copy, redistribute, publish, or create derivative works from its code,
-content, or assets is granted by its presence on GitHub.
+This repository is publicly visible but is not licensed for redistribution.
+Public access grants no permission to copy, redistribute, publish, or create
+derivative works from its code, content, or assets.
 ````
 
 - [ ] **Step 2: Create contribution guidance**
@@ -410,9 +424,10 @@ Create 'CONTRIBUTING.md' with exactly:
 ````markdown
 # Contributing to Crypts & Cairns
 
-Crypts & Cairns is currently a private project. Contributors must have explicit
-repository access and must preserve the approved design and deterministic
-foundation.
+Crypts & Cairns is publicly visible, but public visibility is not an
+open-source license. Coordinate contributions with the repository owner and
+submit them through pull requests for review. All contributions must preserve
+the approved design and deterministic foundation.
 
 ## Workflow
 
@@ -479,12 +494,14 @@ Create 'SECURITY.md' with exactly:
 
 ## Supported version
 
-Security fixes apply to the current `main` branch during private development.
+Security fixes apply to the current `main` branch.
 
 ## Reporting
 
 Do not disclose a suspected vulnerability in ordinary issue or pull-request
-discussion. Contact the repository owner through an existing private channel.
+discussion. Contact the repository owner through an existing private channel,
+or use GitHub's private vulnerability reporting or security advisory flow when
+it is available for this repository.
 
 Include the affected revision, reproduction steps, expected and observed
 behavior, impact, and any suggested mitigation. Do not include real
@@ -572,7 +589,7 @@ Run:
 
 ~~~powershell
 git add README.md CONTRIBUTING.md SECURITY.md .github/pull_request_template.md
-git commit -m 'docs: add private repository guidance'
+git commit -m 'docs: prepare public repository guidance'
 ~~~
 
 Expected: one documentation commit authored with the GitHub noreply identity.
@@ -1211,27 +1228,56 @@ foreach ($file in @('index.html', 'index.js', 'index.wasm', 'index.pck')) {
 
 Expected: nonempty exported Web files. Keep the artifact directory until final verification is complete.
 
-## Task 8: Protect Main When the GitHub Plan Supports Private Rulesets
+## Task 8: Apply the Public-Visibility Amendment and Protect Main
 
 **Files:**
 - Read: '.github/rulesets/main.json'
 - Create remote ruleset: 'Protect main'
 
-- [ ] **Step 1: Check account-plan support before applying the ruleset**
+- [ ] **Step 1: Reconfirm ownership and the authorized visibility change**
 
 Run:
 
 ~~~powershell
-$planName = [string](gh api user --jq '.plan.name')
-Write-Output "GitHub plan: $planName"
-if ($planName -notin @('pro', 'team', 'enterprise')) {
-	throw ('Private personal repository rulesets require a supporting GitHub plan. Ask the owner to choose between upgrading or accepting an unenforced main branch. Do not make the repository public as a workaround.')
+$account = gh api user | ConvertFrom-Json
+$owner = [string]$account.login
+$repoName = 'crypts-and-cairns'
+$remote = gh api "repos/$owner/$repoName" | ConvertFrom-Json
+if ($owner -cne 'Poostaq' -or $remote.owner.login -cne $owner) {
+	throw 'Authenticated account or repository owner is not Poostaq.'
+}
+if (-not [bool]$remote.private -or $remote.default_branch -cne 'main') {
+	throw 'Expected the existing private repository with main as its default branch.'
 }
 ~~~
 
-Expected: a plan supporting private-repository rulesets. Current GitHub documentation limits this to GitHub Pro, Team, and Enterprise plans.
+Expected: authenticated owner `Poostaq` and the existing private repository with
+`main` as its default branch. The owner's explicit authorization recorded in
+the execution amendment is required before continuing.
 
-- [ ] **Step 2: Ensure the ruleset does not already exist**
+- [ ] **Step 2: Change visibility to public and verify unchanged publication boundaries**
+
+Run:
+
+~~~powershell
+$owner = 'Poostaq'
+$repoName = 'crypts-and-cairns'
+gh repo edit "$owner/$repoName" --visibility public --accept-visibility-change-consequences
+if ($LASTEXITCODE -ne 0) {
+	throw 'Could not change repository visibility to public.'
+}
+$remote = gh api "repos/$owner/$repoName" | ConvertFrom-Json
+if ([bool]$remote.private -or $remote.visibility -cne 'public' -or
+	$remote.default_branch -cne 'main' -or [bool]$remote.has_wiki -or
+	[bool]$remote.has_pages -or $null -ne $remote.license) {
+	throw 'Public visibility or repository publication boundaries are incorrect.'
+}
+~~~
+
+Expected: public visibility, default branch `main`, wiki and Pages disabled,
+and no detected license.
+
+- [ ] **Step 3: Ensure the ruleset does not already exist**
 
 Run:
 
@@ -1247,7 +1293,7 @@ if (-not [string]::IsNullOrWhiteSpace($existingRuleset)) {
 
 Expected: no existing matching ruleset.
 
-- [ ] **Step 3: Apply the reviewed ruleset payload**
+- [ ] **Step 4: Apply the reviewed ruleset payload**
 
 Run:
 
@@ -1263,7 +1309,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Expected: HTTP 201 through GitHub CLI.
 
-- [ ] **Step 4: Verify every required remote rule**
+- [ ] **Step 5: Verify every required remote rule**
 
 Run:
 
@@ -1272,20 +1318,30 @@ $account = gh api user | ConvertFrom-Json
 $owner = [string]$account.login
 $repoName = 'crypts-and-cairns'
 $rulesetList = @(gh api "repos/$owner/$repoName/rulesets" | ConvertFrom-Json)
-$rulesetSummary = @($rulesetList | Where-Object name -eq 'Protect main')
-if ($rulesetSummary.Count -ne 1) {
-	throw 'Expected exactly one Protect main ruleset.'
+$activeBranchRulesets = @($rulesetList | Where-Object {
+	$_.target -eq 'branch' -and $_.enforcement -eq 'active'
+})
+if ($activeBranchRulesets.Count -ne 1 -or $activeBranchRulesets[0].name -cne 'Protect main') {
+	throw 'Expected Protect main to be the only active branch ruleset.'
 }
-$rulesetId = [int64]$rulesetSummary[0].id
+$rulesetId = [int64]$activeBranchRulesets[0].id
 $ruleset = gh api "repos/$owner/$repoName/rulesets/$rulesetId" | ConvertFrom-Json
-if ($ruleset.enforcement -ne 'active') {
-	throw 'Protect main ruleset is not active.'
+if ($ruleset.enforcement -cne 'active' -or $ruleset.target -cne 'branch' -or
+	@($ruleset.conditions.ref_name.include).Count -ne 1 -or
+	$ruleset.conditions.ref_name.include[0] -cne '~DEFAULT_BRANCH' -or
+	@($ruleset.conditions.ref_name.exclude).Count -ne 0) {
+	throw 'Protect main must actively target only the default branch.'
 }
 $ruleTypes = @($ruleset.rules.type)
-foreach ($requiredType in @('deletion', 'non_fast_forward', 'required_linear_history', 'pull_request', 'required_status_checks')) {
-	if ($ruleTypes -notcontains $requiredType) {
-		throw "Protect main is missing rule: $requiredType"
-	}
+$expectedRuleTypes = @('deletion', 'non_fast_forward', 'required_linear_history', 'pull_request', 'required_status_checks')
+if (($ruleTypes -join "`n") -cne ($expectedRuleTypes -join "`n")) {
+	throw 'Protect main rules do not exactly match the approved rule types.'
+}
+$pullRequestRules = @($ruleset.rules | Where-Object type -eq 'pull_request')
+if ($pullRequestRules.Count -ne 1 -or
+	[int]$pullRequestRules[0].parameters.required_approving_review_count -ne 0 -or
+	-not [bool]$pullRequestRules[0].parameters.required_review_thread_resolution) {
+	throw 'Protect main must require pull requests with zero approvals and resolved conversations.'
 }
 $statusRules = @($ruleset.rules | Where-Object type -eq 'required_status_checks')
 if ($statusRules.Count -ne 1) {
@@ -1303,7 +1359,10 @@ if (-not $statusRule.parameters.strict_required_status_checks_policy) {
 }
 ~~~
 
-Expected: one active ruleset with all approved protections and the strict 'Verify foundation' check bound to GitHub Actions integration 15368.
+Expected: exactly one active branch ruleset targeting only the default branch,
+with deletion and non-fast-forward blocks, linear history, pull requests with
+zero approvals and conversation resolution, and the strict `Verify foundation`
+check bound to GitHub Actions integration 15368.
 
 ## Task 9: Final End-to-End Verification and Handoff
 
@@ -1343,15 +1402,18 @@ if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
 	throw 'Canonical main differs from origin/main.'
 }
 $remote = gh api "repos/$owner/$repoName" | ConvertFrom-Json
-if (-not [bool]$remote.private -or $remote.default_branch -ne 'main') {
-	throw 'Remote privacy or default branch is incorrect.'
+if ([bool]$remote.private -or $remote.visibility -cne 'public' -or
+	$remote.default_branch -cne 'main' -or [bool]$remote.has_wiki -or
+	[bool]$remote.has_pages -or $null -ne $remote.license) {
+	throw 'Remote visibility, default branch, or publication boundaries are incorrect.'
 }
 if (@(git status --short).Count -ne 0) {
 	throw 'Canonical checkout is not clean.'
 }
 ~~~
 
-Expected: clean 'main', exact upstream match, private remote, correct default branch.
+Expected: clean `main`, exact upstream match, public remote, correct default
+branch, wiki and Pages disabled, and no license.
 
 - [ ] **Step 3: Preserve recovery sources and identify the canonical checkout**
 
@@ -1387,7 +1449,8 @@ gh run list --repo "$owner/$repoName" --workflow foundation.yml --branch main --
 gh api "repos/$owner/$repoName/rulesets" --jq '.[] | {name, enforcement, id}'
 ~~~
 
-Expected: private 'crypts-and-cairns', clean tracked 'main', successful CI, and active 'Protect main' ruleset when account-plan support is available.
+Expected: public `crypts-and-cairns`, clean tracked `main`, successful CI, and
+the active `Protect main` ruleset.
 
 ## References
 
