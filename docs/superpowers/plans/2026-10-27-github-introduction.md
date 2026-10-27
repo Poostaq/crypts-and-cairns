@@ -326,7 +326,7 @@ Expected: identical tip tree, commit count, and subject ordering; exactly one au
 
 Create 'README.md' with exactly:
 
-~~~~markdown
+````markdown
 # Crypts & Cairns
 
 Crypts & Cairns is a deterministic, turn-based simulation of living in a
@@ -346,39 +346,39 @@ game-like world built around expeditions into a lethal labyrinth.
 
 ## Open the project
 
-Open 'project.godot' in the standard Godot 4.7.2 editor and run the main scene.
+Open `project.godot` in the standard Godot 4.7.2 editor and run the main scene.
 
 ## Test
 
-From PowerShell, with Godot 4.7.2 available on 'PATH':
+From PowerShell, with Godot 4.7.2 available on `PATH`:
 
-~~~powershell
+```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
 .\scripts\test.ps1 -GodotBin $godot
-~~~
+```
 
 The foundation suite must complete with zero failures.
 
 ## Export for Web
 
-~~~powershell
+```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
 .\scripts\export-web.ps1 -GodotBin $godot
-~~~
+```
 
-The export is written to 'build/web/'. Generated Godot and build directories
+The export is written to `build/web/`. Generated Godot and build directories
 are intentionally ignored by Git.
 
 ## Repository map
 
-- 'content/' — authoritative data definitions and localization
-- 'src/domain/' — deterministic state, content rules, hashing, and random streams
-- 'src/application/' — commands and replay orchestration
-- 'src/platform/' — JSON and content loading boundaries
-- 'src/presentation/' — Godot scenes and presentation code
-- 'tests/' — headless foundation suite and fixtures
-- 'docs/' — approved design, provenance, plans, and development notes
-- 'scripts/' — local test and Web-export entry points
+- `content/` — authoritative data definitions and localization
+- `src/domain/` — deterministic state, content rules, hashing, and random streams
+- `src/application/` — commands and replay orchestration
+- `src/platform/` — JSON and content loading boundaries
+- `src/presentation/` — Godot scenes and presentation code
+- `tests/` — headless foundation suite and fixtures
+- `docs/` — approved design, provenance, plans, and development notes
+- `scripts/` — local test and Web-export entry points
 
 ## Design and provenance
 
@@ -395,13 +395,13 @@ that affects a world element must be recorded in the provenance ledger.
 This private repository is not yet licensed for redistribution. No permission
 to copy, redistribute, publish, or create derivative works from its code,
 content, or assets is granted by its presence on GitHub.
-~~~~
+````
 
 - [ ] **Step 2: Create contribution guidance**
 
 Create 'CONTRIBUTING.md' with exactly:
 
-~~~~markdown
+````markdown
 # Contributing to Crypts & Cairns
 
 Crypts & Cairns is currently a private project. Contributors must have explicit
@@ -410,7 +410,7 @@ foundation.
 
 ## Workflow
 
-1. Branch from the current 'main'.
+1. Branch from the current `main`.
 2. Keep one coherent change per branch.
 3. Add or update tests before changing deterministic or validation behavior.
 4. Run the complete test suite.
@@ -419,16 +419,16 @@ foundation.
 6. Open a pull request and complete every applicable checklist item.
 7. Merge only after required checks pass and review conversations are resolved.
 
-Do not push feature work directly to 'main'.
+Do not push feature work directly to `main`.
 
 ## Required verification
 
-~~~powershell
+```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
 .\scripts\validate-github-readiness.ps1
 .\scripts\test.ps1 -GodotBin $godot
 .\scripts\export-web.ps1 -GodotBin $godot
-~~~
+```
 
 ## Deterministic code
 
@@ -443,8 +443,8 @@ $godot = (Get-Command godot -ErrorAction Stop).Source
 
 - Keep gameplay definitions data-driven.
 - Validate manifests and definitions before they affect campaign state.
-- Follow 'docs/design/naming-registry.md'.
-- Update 'docs/design/source-provenance.md' when new external evidence informs a
+- Follow `docs/design/naming-registry.md`.
+- Update `docs/design/source-provenance.md` when new external evidence informs a
   world element.
 - Generic terms may remain generic only where the naming registry permits them.
 - Do not copy names, text, art, maps, UI, or other expressive material from the
@@ -454,22 +454,22 @@ $godot = (Get-Command godot -ErrorAction Stop).Source
 
 Do not commit:
 
-- '.godot/' or 'build/' output;
+- `.godot/` or `build/` output;
 - local credentials, access tokens, private keys, or machine identifiers;
 - editor caches or temporary exports;
 - third-party assets without recorded provenance and permission.
-~~~~
+````
 
 - [ ] **Step 3: Create the security policy**
 
 Create 'SECURITY.md' with exactly:
 
-~~~markdown
+````markdown
 # Security Policy
 
 ## Supported version
 
-Security fixes apply to the current 'main' branch during private development.
+Security fixes apply to the current `main` branch during private development.
 
 ## Reporting
 
@@ -486,13 +486,13 @@ credentials, tokens, keys, machine identifiers, or unrelated personal data.
 Never commit secrets. If a secret enters Git history, stop publication and
 rotation work, notify the owner privately, revoke or rotate the secret, and
 clean every reachable ref before further pushes.
-~~~
+````
 
 - [ ] **Step 4: Create the pull-request template**
 
 Create '.github/pull_request_template.md' with exactly:
 
-~~~markdown
+````markdown
 ## Summary
 
 Describe the player-facing or technical outcome and why the change is needed.
@@ -507,13 +507,13 @@ Describe the player-facing or technical outcome and why the change is needed.
 - [ ] Content schema, manifest, and localization implications were reviewed.
 - [ ] Naming-registry implications were reviewed.
 - [ ] Source-provenance implications were reviewed.
-- [ ] No credentials, machine identifiers, generated '.godot/' files, or
-      'build/' output are included.
+- [ ] No credentials, machine identifiers, generated `.godot/` files, or
+      `build/` output are included.
 
 ## Notes
 
 Record intentional follow-up work, migration concerns, or reviewer context.
-~~~
+````
 
 - [ ] **Step 5: Verify documentation paths and license absence**
 
