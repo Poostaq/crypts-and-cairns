@@ -21,7 +21,6 @@ Do not push feature work directly to `main`.
 
 ```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
-.\scripts\validate-github-readiness.ps1
 .\scripts\test.ps1 -GodotBin $godot
 .\scripts\export-web.ps1 -GodotBin $godot
 ```
