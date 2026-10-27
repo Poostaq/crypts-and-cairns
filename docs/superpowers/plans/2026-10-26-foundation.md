@@ -66,7 +66,7 @@ docs/development/foundation.md            Contracts and developer commands.
 Install the standard, non-.NET Godot 4.7.2 editor and matching export templates. Set `GODOT_BIN` to the absolute console executable path for the current shell:
 
 ```powershell
-$env:GODOT_BIN = 'C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe'
+$env:GODOT_BIN = '<absolute-path-to-godot-4.7.2-console>'
 & $env:GODOT_BIN --version
 ```
 

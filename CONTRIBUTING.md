@@ -1,9 +1,12 @@
 # Contributing to Crypts & Cairns
 
-Crypts & Cairns is publicly visible, but public visibility is not an
-open-source license. Coordinate contributions with the repository owner and
-submit them through pull requests for review. All contributions must preserve
-the approved design and deterministic foundation.
+Crypts & Cairns has no open-source license or additional reuse grant. Public
+availability carries only the limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features. Coordinate
+contributions with the repository owner and submit them through pull requests
+for review. All contributions must preserve the approved design and
+deterministic foundation.
 
 ## Workflow
 

@@ -7,9 +7,9 @@ Security fixes apply to the current `main` branch.
 ## Reporting
 
 Do not disclose a suspected vulnerability in ordinary issue or pull-request
-discussion. Contact the repository owner through an existing private channel,
-or use GitHub's private vulnerability reporting or security advisory flow when
-it is available for this repository.
+discussion. On GitHub, open **Security**, select **Advisories**, and choose
+**Report a vulnerability** to start a private report. If that flow is
+unavailable, contact the repository owner through an existing private channel.
 
 Include the affected revision, reproduction steps, expected and observed
 behavior, impact, and any suggested mitigation. Do not include real

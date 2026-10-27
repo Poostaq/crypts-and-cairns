@@ -84,7 +84,7 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
 	'.github/workflows/foundation.yml' = 'bccd43c0c5a920a68211c4a40ec744eb595322435a9929a5c256c3bf6969a8f1'
-	'.github/rulesets/main.json' = 'a1495c817a1c8d7ffcd76e8a3e8161177c913cb514ab4e9e79d7cf24ceefac4f'
+	'.github/rulesets/main.json' = '99651cce242eb4f8c3eceb6bc67b24e2e13303e6daab84ec838529fcb0d60d8e'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
 	$absolutePath = Join-Path $RepositoryRoot $entry.Key
@@ -136,6 +136,18 @@ if (Test-Path -LiteralPath $rulesetPath -PathType Leaf) {
 		})
 		if (($actualRuleTypes -join "`n") -cne ($expectedRuleTypes -join "`n")) {
 			$failures.Add('Ruleset rule types do not match the approved protections.')
+		}
+
+		$pullRequestRules = @($rules | Where-Object {
+			(Get-JsonPropertyValue -InputObject $_ -Name 'type') -ceq 'pull_request'
+		})
+		if ($pullRequestRules.Count -ne 1) {
+			$failures.Add('Ruleset must contain exactly one pull_request rule.')
+		} else {
+			$pullRequestParameters = Get-JsonPropertyValue -InputObject $pullRequestRules[0] -Name 'parameters'
+			if ((Get-JsonPropertyValue -InputObject $pullRequestParameters -Name 'require_extra_approval_for_unattributed_changes') -ne $false) {
+				$failures.Add('Ruleset pull requests must not require extra approval for unattributed changes.')
+			}
 		}
 
 		$statusRules = @($rules | Where-Object {
@@ -198,6 +210,44 @@ if (Test-Path -LiteralPath $contributingPath -PathType Leaf) {
 		if (-not $contributing.Contains($fragment)) {
 			$failures.Add("CONTRIBUTING is missing required PowerShell requirement: $fragment")
 		}
+	}
+}
+
+$termsUrl = 'https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users'
+foreach ($relativePath in @(
+	'README.md',
+	'CONTRIBUTING.md',
+	'docs/superpowers/specs/2026-10-27-github-introduction-design.md',
+	'docs/superpowers/plans/2026-10-27-github-introduction.md'
+)) {
+	$absolutePath = Join-Path $RepositoryRoot $relativePath
+	if (Test-Path -LiteralPath $absolutePath -PathType Leaf) {
+		$content = Get-Content -LiteralPath $absolutePath -Raw
+		if (-not $content.Contains('no open-source license') -or -not $content.Contains($termsUrl)) {
+			$failures.Add("Public license guidance is incomplete: $relativePath")
+		}
+	}
+}
+
+$securityPath = Join-Path $RepositoryRoot 'SECURITY.md'
+if (Test-Path -LiteralPath $securityPath -PathType Leaf) {
+	$security = Get-Content -LiteralPath $securityPath -Raw
+	foreach ($fragment in @('Security', 'Advisories', 'Report a vulnerability')) {
+		if (-not $security.Contains($fragment)) {
+			$failures.Add("SECURITY is missing private-reporting navigation: $fragment")
+		}
+	}
+}
+
+$publicMarkdown = @(
+	Get-ChildItem -LiteralPath $RepositoryRoot -File -Filter '*.md'
+	Get-ChildItem -LiteralPath (Join-Path $RepositoryRoot 'docs') -Recurse -File -Filter '*.md'
+)
+foreach ($file in $publicMarkdown) {
+	$content = Get-Content -LiteralPath $file.FullName -Raw
+	if ($content -match '[A-Za-z]:\\') {
+		$relativePath = [System.IO.Path]::GetRelativePath($RepositoryRoot, $file.FullName)
+		$failures.Add("Public Markdown contains a machine-specific absolute path: $relativePath")
 	}
 }
 

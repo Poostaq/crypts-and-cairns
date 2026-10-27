@@ -15,9 +15,16 @@ authorized public visibility so the approved `main` protections can remain in
 scope.
 
 This amendment overrides the private-visibility steps and expectations below.
-It does not add or approve a license, GitHub Pages deployment, or release. The
-repository remains unlicensed for redistribution even though it is publicly
-visible.
+It does not add or approve an open-source license, an additional reuse grant,
+a GitHub Pages deployment, or a release. Public availability carries only the
+limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features.
+
+A post-publication hardening follow-up enables private vulnerability reporting,
+secret scanning, and secret-scanning push protection. It also records the solo
+maintainer policy explicitly by setting unattributed-change extra approval to
+`false` in both the stored and live ruleset.
 
 ## Purpose
 
@@ -85,8 +92,9 @@ The README will contain:
 - a short repository map;
 - links to the approved design specification, naming registry, source
   provenance ledger, and foundation development notes;
-- a statement that the repository is publicly visible but not licensed for
-  redistribution, and that public access grants no redistribution rights.
+- a statement that the repository has no open-source license or additional
+  reuse grant beyond the limited platform rights provided by GitHub's Terms of
+  Service.
 
 The README must describe Crypts & Cairns in its approved original terminology.
 It must not promise that the project is legally risk-free.
@@ -106,9 +114,10 @@ Contribution guidance will require:
 ### `SECURITY.md`
 
 Security guidance will prohibit committing credentials, tokens, private keys,
-or personal machine data. Reports should go to the repository owner privately
-or be opened as a draft GitHub security advisory rather than being disclosed in
-ordinary discussion. No contact email will be embedded in the repository.
+or personal machine data. Private vulnerability reporting will be enabled, and
+reports should use **Security** > **Advisories** > **Report a vulnerability**,
+with an existing private owner channel as fallback. No contact email will be
+embedded in the repository.
 
 ### `.github/pull_request_template.md`
 
@@ -176,7 +185,9 @@ run has registered its check. The initial solo-development ruleset will:
 The ruleset will not initially require another person's approval. That avoids
 deadlocking a personal repository while still requiring reviewable pull
 requests and automated verification. Approval requirements can be added when a
-second maintainer joins.
+second maintainer joins. The pull-request rule will explicitly set
+`require_extra_approval_for_unattributed_changes` to `false` rather than relying
+on GitHub's default.
 
 ## Validation and Failure Handling
 

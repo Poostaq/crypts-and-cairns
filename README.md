@@ -65,6 +65,9 @@ that affects a world element must be recorded in the provenance ledger.
 
 ## License status
 
-This repository is publicly visible but is not licensed for redistribution.
-Public access grants no permission to copy, redistribute, publish, or create
-derivative works from its code, content, or assets.
+This repository has no open-source license and grants no additional reuse
+rights. Public availability carries only the limited rights described in
+[GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#5-license-grant-to-other-users),
+including viewing and forking through GitHub's platform features. Beyond those
+platform rights, no permission is granted to copy, redistribute, publish, or
+create derivative works from the code, content, or assets.
