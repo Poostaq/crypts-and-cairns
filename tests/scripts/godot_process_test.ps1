@@ -230,18 +230,19 @@ Start-Sleep -Seconds 60
 	if ($IsWindows) {
 		$windowsPowerShell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
 		$escapedModulePath = $ModulePath.Replace("'", "''")
-		$guardOutput = @(
-			& $windowsPowerShell `
-				-NoLogo `
-				-NoProfile `
-				-Command "Import-Module -Name '$escapedModulePath' -Force -ErrorAction Stop" `
-				2>&1
-		)
-		$guardExitCode = $LASTEXITCODE
-		if ($guardExitCode -eq 0) {
+		$guardResult = Invoke-GodotProcess `
+			-GodotBin $windowsPowerShell `
+			-ArgumentList @(
+				'-NoLogo',
+				'-NoProfile',
+				'-Command',
+				"Import-Module -Name '$escapedModulePath' -Force -ErrorAction Stop"
+			) `
+			-TimeoutSeconds 30
+		if ($guardResult.ExitCode -eq 0) {
 			throw 'Windows PowerShell 5.1 module import should fail.'
 		}
-		$guardMessage = $guardOutput -join [Environment]::NewLine
+		$guardMessage = $guardResult.StandardOutput + $guardResult.StandardError
 		$expectedGuard = 'Godot process launcher requires PowerShell 7 or later. Run this command with pwsh.'
 		if (-not $guardMessage.Contains($expectedGuard)) {
 			throw "Windows PowerShell 5.1 guard message was not deliberate: $guardMessage"
