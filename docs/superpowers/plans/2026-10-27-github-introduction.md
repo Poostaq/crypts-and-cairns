@@ -354,10 +354,12 @@ Open `project.godot` in the standard Godot 4.7.2 editor and run the main scene.
 
 ## Test
 
-From PowerShell, with Godot 4.7.2 available on `PATH`:
+From PowerShell 7 or later (`pwsh`), with Godot 4.7.2 available on `PATH`.
+Windows PowerShell 5.1 is not supported.
 
 ```powershell
 $godot = (Get-Command godot -ErrorAction Stop).Source
+.\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot
 ```
 
@@ -427,9 +429,13 @@ Do not push feature work directly to `main`.
 
 ## Required verification
 
+Run verification commands with PowerShell 7 or later (`pwsh`). Windows
+PowerShell 5.1 is not supported.
+
 ```powershell
 .\scripts\validate-github-readiness.ps1
 $godot = (Get-Command godot -ErrorAction Stop).Source
+.\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 .\scripts\test.ps1 -GodotBin $godot
 .\scripts\export-web.ps1 -GodotBin $godot
 ```
@@ -634,8 +640,10 @@ $requiredFiles = @(
 	'.github/pull_request_template.md',
 	'.github/workflows/foundation.yml',
 	'.github/rulesets/main.json',
+	'scripts/GodotProcess.psm1',
 	'scripts/validate-publication.ps1',
 	'scripts/verify-web-pck.ps1',
+	'tests/scripts/godot_process_test.ps1',
 	'tests/scripts/publication_validator_test.ps1',
 	'tests/scripts/web_pck_verifier_test.ps1',
 	'docs/superpowers/specs/2026-10-25-crypts-and-cairns-design.md',
@@ -667,7 +675,7 @@ if ($licenseFiles.Count -gt 0 -or $licenseDirectories.Count -gt 0) {
 
 # Exact normalized hashes intentionally lock the reviewed CI and branch-protection policy.
 $expectedPolicyHashes = [ordered]@{
-	'.github/workflows/foundation.yml' = '531dd09d807eddc967ef6d569704ce366ad0e7cfe25d068f9312d418aadd38e8'
+	'.github/workflows/foundation.yml' = 'bccd43c0c5a920a68211c4a40ec744eb595322435a9929a5c256c3bf6969a8f1'
 	'.github/rulesets/main.json' = 'a1495c817a1c8d7ffcd76e8a3e8161177c913cb514ab4e9e79d7cf24ceefac4f'
 }
 foreach ($entry in $expectedPolicyHashes.GetEnumerator()) {
@@ -762,6 +770,27 @@ if (Test-Path -LiteralPath $readmePath -PathType Leaf) {
 			$failures.Add("README is missing required link: $link")
 		}
 	}
+	foreach ($fragment in @(
+		'From PowerShell 7 or later (`pwsh`)',
+		'Windows PowerShell 5.1 is not supported.'
+	)) {
+		if (-not $readme.Contains($fragment)) {
+			$failures.Add("README is missing required PowerShell requirement: $fragment")
+		}
+	}
+}
+
+$contributingPath = Join-Path $RepositoryRoot 'CONTRIBUTING.md'
+if (Test-Path -LiteralPath $contributingPath -PathType Leaf) {
+	$contributing = Get-Content -LiteralPath $contributingPath -Raw
+	foreach ($fragment in @(
+		'PowerShell 7 or later (`pwsh`)',
+		'PowerShell 5.1 is not supported.'
+	)) {
+		if (-not $contributing.Contains($fragment)) {
+			$failures.Add("CONTRIBUTING is missing required PowerShell requirement: $fragment")
+		}
+	}
 }
 
 if ($failures.Count -gt 0) {
@@ -819,6 +848,12 @@ jobs:
           version: 4.7.2
           use-dotnet: false
           include-templates: true
+
+      - name: Test Godot process launcher
+        shell: pwsh
+        run: |
+          $godot = (Get-Command godot -ErrorAction Stop).Source
+          .\tests\scripts\godot_process_test.ps1 -GodotBin $godot
 
       - name: Validate repository metadata
         shell: pwsh

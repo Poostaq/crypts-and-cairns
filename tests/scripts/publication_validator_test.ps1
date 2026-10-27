@@ -1,11 +1,14 @@
 param(
-	[string]$ValidatorPath = (
-		Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'scripts/validate-publication.ps1'
-	)
+	[string]$ValidatorPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+$repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if ([string]::IsNullOrWhiteSpace($ValidatorPath)) {
+	$ValidatorPath = Join-Path $repositoryRoot 'scripts/validate-publication.ps1'
+}
 
 $expectedEmail = '24713387+Poostaq@users.noreply.github.com'
 $tempParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd(
