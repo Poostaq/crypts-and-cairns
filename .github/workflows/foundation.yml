@@ -1,0 +1,57 @@
+name: Foundation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify foundation
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install Godot 4.7.2
+        uses: chickensoft-games/setup-godot@ac93246ea68518a384c1c280a496e5989341f2f6
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Validate repository metadata
+        shell: pwsh
+        run: .\scripts\validate-github-readiness.ps1
+
+      - name: Run foundation tests
+        shell: pwsh
+        run: |
+          $godot = (Get-Command godot -ErrorAction Stop).Source
+          .\scripts\test.ps1 -GodotBin $godot
+
+      - name: Export Web build
+        shell: pwsh
+        run: |
+          $godot = (Get-Command godot -ErrorAction Stop).Source
+          .\scripts\export-web.ps1 -GodotBin $godot
+
+      - name: Upload Web build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crypts-and-cairns-web-${{ github.sha }}
+          path: build/web
+          if-no-files-found: error
+          retention-days: 7
