@@ -6,6 +6,19 @@
 
 **Repository:** Crypts & Cairns
 
+## Execution Amendment: Public Visibility
+
+Private visibility was selected for the initial GitHub introduction. During
+execution, the current GitHub Free account was found not to support rulesets or
+protected branches for a private personal repository. The owner explicitly
+authorized public visibility so the approved `main` protections can remain in
+scope.
+
+This amendment overrides the private-visibility steps and expectations below.
+It does not add or approve a license, GitHub Pages deployment, or release. The
+repository remains unlicensed for redistribution even though it is publicly
+visible.
+
 ## Purpose
 
 Introduce the existing local repository to GitHub as a private repository under
@@ -72,8 +85,8 @@ The README will contain:
 - a short repository map;
 - links to the approved design specification, naming registry, source
   provenance ledger, and foundation development notes;
-- a statement that the repository is private and not yet licensed for
-  redistribution.
+- a statement that the repository is publicly visible but not licensed for
+  redistribution, and that public access grants no redistribution rights.
 
 The README must describe Crypts & Cairns in its approved original terminology.
 It must not promise that the project is legally risk-free.
@@ -137,7 +150,7 @@ or `.gitignore`, because the local repository already owns its initial history.
 Add the new repository as `origin`, verify both fetch and push URLs, then push
 `main` and set its upstream. Verify on GitHub that:
 
-- repository visibility is private;
+- repository visibility is public under the execution amendment;
 - `main` is the default branch;
 - all expected commits and files are present;
 - the foundation workflow starts and succeeds;
@@ -191,7 +204,7 @@ The introduction is complete when:
 - local development uses `main`;
 - history contains only the intended GitHub `noreply` email identity or
   identities explicitly approved by the owner;
-- `origin` points to the private personal repository named
+- `origin` points to the public personal repository named
   `crypts-and-cairns`;
 - local `main` tracks `origin/main`;
 - README and contribution/security guidance render correctly on GitHub;

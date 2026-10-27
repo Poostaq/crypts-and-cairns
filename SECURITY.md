@@ -2,12 +2,14 @@
 
 ## Supported version
 
-Security fixes apply to the current `main` branch during private development.
+Security fixes apply to the current `main` branch.
 
 ## Reporting
 
 Do not disclose a suspected vulnerability in ordinary issue or pull-request
-discussion. Contact the repository owner through an existing private channel.
+discussion. Contact the repository owner through an existing private channel,
+or use GitHub's private vulnerability reporting or security advisory flow when
+it is available for this repository.
 
 Include the affected revision, reproduction steps, expected and observed
 behavior, impact, and any suggested mitigation. Do not include real

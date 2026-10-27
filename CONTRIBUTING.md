@@ -1,8 +1,9 @@
 # Contributing to Crypts & Cairns
 
-Crypts & Cairns is currently a private project. Contributors must have explicit
-repository access and must preserve the approved design and deterministic
-foundation.
+Crypts & Cairns is publicly visible, but public visibility is not an
+open-source license. Coordinate contributions with the repository owner and
+submit them through pull requests for review. All contributions must preserve
+the approved design and deterministic foundation.
 
 ## Workflow
 
